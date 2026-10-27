@@ -10,6 +10,8 @@ Copy this file to `docs/advisories/YYYY-NNNN.md` when publishing an advisory, wh
 
 - **CVE ID:** `CVE-____-_____`
 - **Severity:** Critical / High / Medium / Low
+- **CVSS 4.0:** `X.X` (score) — vector `CVSS:4.0/AV:.../...` (use CVSS 4.0; record the vector string)
+- **Attack conditions / prerequisites:** (no account / guest link / signed-in user / share member / administrator; any specific configuration required)
 - **Affected versions:** `< vX.Y.Z` (list the affected range)
 - **Fixed version:** `vX.Y.Z`
 - **Component:** (web UI / HTTP API / MCP layer / transport / vault / audit / database)

@@ -15,6 +15,11 @@ All reports come through GitHub **private vulnerability reporting** on the repos
 - The reporter receives a private thread where the whole process takes place.
 - Only the steward and designated maintainers have access to the report.
 
+Additional channels, configured by the steward and recorded here once live:
+
+- **`security@`** — an email alias forwarded to the steward and at least one maintainer, used when GitHub private reporting is not available or for encrypted follow-up.
+- **PGP** — a published fingerprint for encrypted communication. The key and fingerprint are owned by the steward and published here (and in `docs/KEYS.md`) when available.
+
 ## Severity classification
 
 | Severity | Definition |
@@ -28,11 +33,22 @@ Severity follows a CVSS-style assessment but is ultimately decided by the securi
 
 ## Response commitments
 
-- **Acknowledge** the report within **3 business days**.
-- **Triage and assign severity** within **7 business days**.
-- **Fix target** — Critical: as soon as possible, typically within **14 days**; High: next release; Medium/Low: scheduled in the normal release cadence.
+Response targets by severity:
+
+| Severity | Acknowledge | Triage | Fix | Publish |
+|---|---|---|---|---|
+| Critical | 24 h | 48 h | 72 h | immediately after release |
+| High | 2 days | 5 days | 14 days | with the release |
+| Medium | 5 days | 10 days | 30 days | with the release |
+| Low | 10 days | 30 days | next release | as needed |
 
 These are targets, not guarantees. If a fix is delayed, the reporter is kept informed.
+
+## Disclosure window
+
+Public disclosure follows the fix release. The default window is **90 days** from acknowledgement,
+or a date agreed with the reporter. Advisories are published as GitHub Security Advisories at the
+same time the fixed release goes out.
 
 ## Embargo
 

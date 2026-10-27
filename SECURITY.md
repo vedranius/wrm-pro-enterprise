@@ -23,7 +23,16 @@ Please include:
 - steps to reproduce or a proof of concept,
 - if you have them, suggestions for a fix.
 
-You will get an answer as soon as possible, usually within a week. Once a fix is released, the release notes credit you if you want. Please give a reasonable time to release a fix before you publish anything.
+You will get an answer as soon as possible. Response targets by severity (the full process is in [docs/PSIRT.md](docs/PSIRT.md)):
+
+| Severity | Acknowledge | Triage | Fix | Publish |
+|---|---|---|---|---|
+| Critical | 24 h | 48 h | 72 h | immediately after release |
+| High | 2 days | 5 days | 14 days | with the release |
+| Medium | 5 days | 10 days | 30 days | with the release |
+| Low | 10 days | 30 days | next release | as needed |
+
+Once a fix is released, the release notes credit you if you want. Please give a reasonable time to release a fix before you publish anything.
 
 **In scope:** the WRM server, web UI and container image in this repository. For example: authentication and 2FA bypass, privilege escalation between users or share roles, access to stored secrets or to other people's session recordings, changing or deleting audit records without detection, cross-site scripting or request forgery, reaching servers or networks you should not reach (the TURN relay, SSH tunnels and jump hosts included — e.g. using another user's jump host or tunnel, or bypassing the tunnel policies), getting the **AI assistant** to run something its mode does not allow (escaping the read-only classifier, the approvals, the automatic-mode limits or the destructive-pattern list, or changing the mode from server output), reading another user's AI transcripts, provider keys reaching the browser, using **AI connections (MCP)** beyond their user, connections, mode, scopes or lifetime (token theft or reuse after revoke or expiry, OAuth flaws such as redirect URI, PKCE or consent bypass, cross-origin calls to `/mcp`), and denial of service with small effort.
 
