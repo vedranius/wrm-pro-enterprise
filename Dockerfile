@@ -14,7 +14,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.AppVersion=${VERSIO
 # The image is deliberately free of GPL-licensed tools. The Bitwarden CLI (GPL-3.0) is NOT
 # bundled: operators who want the vault integration install it at runtime and point WRM at it
 # with WRM_BITWARDEN_CLI (see docs/THIRD-PARTY.md). Node.js was removed with it.
-FROM alpine:3.22
+FROM alpine:3.24
 LABEL org.opencontainers.image.title="WRM Pro Enterprise" \
       org.opencontainers.image.source="https://github.com/vedranius/wrm-pro-enterprise" \
       org.opencontainers.image.licenses="Apache-2.0"
