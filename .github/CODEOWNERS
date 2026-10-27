@@ -2,16 +2,32 @@
 
 * @vedranius
 
-# Security-sensitive paths
-/SECURITY.md                      @vedranius
-/LICENSE                          @vedranius
-/NOTICE                           @vedranius
-/TRADEMARK.md                     @vedranius
-/docs/PSIRT.md                    @vedranius
-/docs/KEYS.md                     @vedranius
-/docs/THREAT-MODEL.md             @vedranius
+# Critical paths (roadmap Faza 3: auth, crypto, session, mcp, update, workflows)
 /remote-manager/security.go       @vedranius
+/remote-manager/users.go          @vedranius
+/remote-manager/totp.go           @vedranius
+/remote-manager/ldap.go           @vedranius
+/remote-manager/oidc.go           @vedranius
+/remote-manager/scim.go           @vedranius
+/remote-manager/releasesign.go    @vedranius
+/remote-manager/keys.go           @vedranius
+/remote-manager/connsecret.go     @vedranius
+/remote-manager/recording.go      @vedranius
 /remote-manager/ai_engine.go      @vedranius
 /remote-manager/ai_policy.go      @vedranius
 /remote-manager/ai_destructive.go @vedranius
-/remote-manager/mcp_server.go     @vedranius
+/remote-manager/mcp_*.go          @vedranius
+/remote-manager/update.go         @vedranius
+/remote-manager/mcpb/             @vedranius
+/.github/workflows/               @vedranius
+
+# Governance and legal
+/LICENSE           @vedranius
+/NOTICE            @vedranius
+/TRADEMARK.md      @vedranius
+/GOVERNANCE.md     @vedranius
+/CLA.md            @vedranius
+/SECURITY.md       @vedranius
+/docs/PSIRT.md     @vedranius
+/docs/KEYS.md      @vedranius
+/docs/THREAT-MODEL.md @vedranius

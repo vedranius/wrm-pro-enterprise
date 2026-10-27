@@ -16,3 +16,19 @@ Steps to cut a new WRM release. Run in order.
 12. **Security** — if the release contains security fixes, follow `docs/PSIRT.md` for coordinated disclosure and advisory publication.
 
 The signing key and verification procedure are documented in `docs/KEYS.md`.
+
+## Canary and rollback
+
+Before a release reaches everyone, it rolls out in stages:
+
+1. **Staging** — the release runs against a staging or copy database and a representative set of connections.
+2. **Canary** — one production installation (or a small subset) upgrades first and is watched for healthcheck failures and error rates.
+3. **Full rollout** — the remaining installations upgrade after the canary is stable.
+
+Rollback is automatic when the healthcheck fails: restore the database backup (see `docs/MIGRATIONS.md`) and run the previous binary. Migrations are forward-only, so rollback is always *restore backup + previous binary*, never an in-place downgrade.
+
+The self-updater verifies the release signature and SHA-256 before installing (see `docs/KEYS.md`), so a tampered or incomplete release cannot be applied.
+
+## Coverage target
+
+Critical packages (authentication, authorization, crypto, sessions — `security.go`, `users.go`, `totp.go`, `ai_engine.go`, `ai_policy.go`, `recording.go`) should keep **≥ 80 %** line coverage. The `Coverage` job in `security.yml` reports the current numbers; once the baseline is known, flip that job to fail below the threshold.

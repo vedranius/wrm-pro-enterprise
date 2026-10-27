@@ -188,3 +188,25 @@ jobs:
         run: |
           go install github.com/google/go-licenses@latest
           "$(go env GOPATH)/bin/go-licenses" check --disallowed_types=restricted ./...
+
+  # Coverage report for the critical packages (docs/RELEASE.md: target >= 80%). Reports only
+  # for now; flip to a failing threshold once the baseline is known on CI.
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: remote-manager/go.mod
+          cache: false
+      - name: Coverage report
+        working-directory: remote-manager
+        run: |
+          go test -coverprofile=coverage.out ./... || true
+          echo "Total coverage:"
+          go tool cover -func=coverage.out | tail -n 1
+          echo "Critical packages (target >= 80%):"
+          go tool cover -func=coverage.out | grep -E 'security\.go|users\.go|totp\.go|ai_engine\.go|ai_policy\.go|recording\.go' || true

@@ -28,3 +28,9 @@ Significant changes — new subsystems, breaking API changes, changes to the thr
 ## Code of Conduct
 
 All participants are expected to follow the `CODE_OF_CONDUCT.md`. The steward and maintainers are responsible for enforcing it.
+
+## Versioning and deprecation
+
+- **Semantic versioning.** Releases use `MAJOR.MINOR.PATCH`. `MAJOR` changes when the public API, database schema or licence/governance changes incompatibly; `MINOR` adds features; `PATCH` fixes bugs. The first Apache-2.0 release is v14.0.0.
+- **Deprecation.** A deprecated feature or endpoint is kept for at least **two minor releases** after the deprecation notice, then removed in a `MAJOR` release.
+- **Security patches.** Fixes go to the latest release; where necessary they are also backported to the previous minor. See `SECURITY.md` for the supported versions.
