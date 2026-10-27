@@ -8,9 +8,9 @@ Claude Code.
 ## Install
 
 **Claude app:** *Customize → Plugins → Add → Add marketplace*, enter
-`vedranius/web-browser-rdm-public` in lowercase, then install **WRM PRO**. If adding the
+`vedranius/wrm-pro-enterprise` in lowercase, then install **WRM PRO**. If adding the
 marketplace fails, *Add → Upload plugin* with `claude-plugin-wrm-pro.zip` from the
-[latest WRM release](https://github.com/vedranius/web-browser-RDM-public/releases/latest)
+[latest WRM release](https://github.com/vedranius/wrm-pro-enterprise/releases/latest)
 installs the same plugin.
 
 If the Claude app only says *Failed to add marketplace*:
@@ -26,11 +26,11 @@ If the Claude app only says *Failed to add marketplace*:
 **Claude Code** (2.1.275 or later):
 
 ```
-/plugin install wrm-pro --marketplace vedranius/web-browser-RDM-public
+/plugin install wrm-pro --marketplace vedranius/wrm-pro-enterprise
 ```
 
-or in a terminal `claude plugin install wrm-pro --marketplace vedranius/web-browser-RDM-public`.
-Older versions: `/plugin marketplace add vedranius/web-browser-RDM-public`, then
+or in a terminal `claude plugin install wrm-pro --marketplace vedranius/wrm-pro-enterprise`.
+Older versions: `/plugin marketplace add vedranius/wrm-pro-enterprise`, then
 `/plugin install wrm-pro@wrm-pro`.
 
 ## Use
@@ -102,7 +102,7 @@ The skills are plain Agent Skills folders (`skills/<name>/SKILL.md`). Agents tha
 from a folder can use them directly; the skills CLI installs them from this repository:
 
 ```sh
-npx skills add vedranius/web-browser-RDM-public
+npx skills add vedranius/wrm-pro-enterprise
 ```
 
 ## MCP Registry

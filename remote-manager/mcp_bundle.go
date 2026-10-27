@@ -61,7 +61,7 @@ func mcpbManifest(mcpURL, token string) map[string]interface{} {
 		"long_description": mcpServerDescription,
 		"author":           map[string]interface{}{"name": "WRM PRO", "url": "https://github.com/vedranius/wrm-pro-enterprise"},
 		"homepage":         "https://github.com/vedranius/wrm-pro-enterprise",
-		"license":          "LicenseRef-WRM-PRO",
+		"license":          "Apache-2.0",
 		"icon":             "icon.png",
 		"server": map[string]interface{}{
 			"type":        "node",
@@ -111,7 +111,7 @@ func pluginMCPBManifest() map[string]interface{} {
 		"long_description": mcpServerDescription + "\n\nNo settings are needed: on first use the wrm_connect tool opens WRM in the browser for sign-in, or WRM's setup script for all AI apps saves the connection on this computer.",
 		"author":           map[string]interface{}{"name": "WRM PRO", "url": "https://github.com/vedranius/wrm-pro-enterprise"},
 		"homepage":         "https://github.com/vedranius/wrm-pro-enterprise",
-		"license":          "LicenseRef-WRM-PRO",
+		"license":          "Apache-2.0",
 		"icon":             "icon.png",
 		"server": map[string]interface{}{
 			"type":        "node",
