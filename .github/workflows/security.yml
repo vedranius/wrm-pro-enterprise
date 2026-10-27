@@ -205,8 +205,11 @@ jobs:
       - name: Coverage report
         working-directory: remote-manager
         run: |
-          go test -coverprofile=coverage.out ./... || true
+          go test -coverprofile=coverage.out ./...
           echo "Total coverage:"
           go tool cover -func=coverage.out | tail -n 1
           echo "Critical packages (target >= 80%):"
           go tool cover -func=coverage.out | grep -E 'security\.go|users\.go|totp\.go|ai_engine\.go|ai_policy\.go|recording\.go' || true
+          # No-regression floor (current baseline 70.6%). Raise toward the 80% target for the
+          # critical packages as coverage improves (see docs/RELEASE.md).
+          go tool cover -func=coverage.out | tail -n 1 | awk '{gsub(/%/,"",$NF); if ($NF+0 < 70) { print "coverage below the 70% floor"; exit 1 } }'
