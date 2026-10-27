@@ -1,0 +1,17 @@
+# Code owners
+
+* @vedranius
+
+# Security-sensitive paths
+/SECURITY.md                      @vedranius
+/LICENSE                          @vedranius
+/NOTICE                           @vedranius
+/TRADEMARK.md                     @vedranius
+/docs/PSIRT.md                    @vedranius
+/docs/KEYS.md                     @vedranius
+/docs/THREAT-MODEL.md             @vedranius
+/remote-manager/security.go       @vedranius
+/remote-manager/ai_engine.go      @vedranius
+/remote-manager/ai_policy.go      @vedranius
+/remote-manager/ai_destructive.go @vedranius
+/remote-manager/mcp_server.go     @vedranius

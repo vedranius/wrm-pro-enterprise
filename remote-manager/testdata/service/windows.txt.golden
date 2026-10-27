@@ -1,0 +1,8 @@
+Name: wrm
+DisplayName: Web Remote Manager PRO
+Description: Web Remote Manager PRO: SSH, SFTP, remote desktop and server management in the browser.
+StartType: automatic (delayed start)
+Account: LocalSystem
+CommandLine: "C:\Program Files\WRM\wrm-pro-v11.7.0-windows-amd64.exe" -service=windows -service-name wrm -env-file C:\ProgramData\WRM\wrm.env -workdir C:\ProgramData\WRM
+Recovery: restart after 3s (3 times), reset after 1h0m0s, also when WRM exits with an error code
+Log: C:\ProgramData\WRM\wrm-service.log

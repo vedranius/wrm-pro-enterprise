@@ -1,0 +1,448 @@
+name: Build Web Remote Manager PRO
+
+# Binaries are attached directly to the GitHub Release (no Actions artifacts), so builds do
+# not depend on the Actions artifact storage quota. Branch pushes / PRs only verify that
+# everything compiles for every platform.
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+# Read-only by default; jobs that upload release assets ask for write access themselves.
+permissions:
+  contents: read
+
+env:
+  # Version for branch builds. Tag builds use the tag name (e.g. v10.10.0) as version and in file names.
+  APP_VERSION: v14.0.0
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  # ─────────────────────────────────────────────
+  #  Checks: go vet + gofmt + unit tests (race detector) + JavaScript syntax of the UI
+  # ─────────────────────────────────────────────
+  check:
+    name: Vet & lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: remote-manager/go.mod
+          cache: false
+
+      - name: Go toolchain matches go.mod
+        working-directory: remote-manager
+        run: |
+          want=$(awk '$1=="toolchain"{print $2}' go.mod)
+          got=$(go env GOVERSION)
+          echo "go.mod toolchain: ${want}; in use: ${got}"
+          [ "$want" = "$got" ]
+
+      - name: Download Go modules (retries on network errors)
+        working-directory: remote-manager
+        run: |
+          for i in 1 2 3 4 5; do
+            go mod download && exit 0
+            echo "go mod download failed (attempt $i), retrying..."; sleep $((i * 10))
+          done
+          exit 1
+
+      - name: go vet
+        working-directory: remote-manager
+        run: go vet ./...
+
+      - name: gofmt
+        working-directory: remote-manager
+        run: |
+          out=$(gofmt -l .)
+          if [ -n "$out" ]; then echo "Not gofmt-ed: $out"; exit 1; fi
+
+      - name: Unit tests (race detector)
+        working-directory: remote-manager
+        run: go test -race -count=1 -timeout 45m ./...
+
+      - name: Web UI syntax, translations and Git Simple / AI regressions
+        run: |
+          python3 tools/test-medium-wrapper.py
+          node tools/check-ui.js
+          node --test tools/test-git-simple.js tools/test-ai-events.js tools/test-appimage.js tools/test-workspace-context.js tools/test-git-client.js tools/test-monitoring.js
+
+  # ─────────────────────────────────────────────
+  #  Create the release (tags only) as a draft before the binaries are uploaded
+  # ─────────────────────────────────────────────
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    needs: check
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Create or update GitHub Release
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --title "Web Remote Manager PRO $TAG" --notes-file RELEASE_NOTES.md
+          else
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag \
+              --title "Web Remote Manager PRO $TAG" --notes-file RELEASE_NOTES.md --draft
+          fi
+
+  # ─────────────────────────────────────────────
+  #  Cross-platform binary builds (pure Go, no CGO)
+  # ─────────────────────────────────────────────
+  build:
+    name: Build ${{ matrix.label }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    needs: [check, create-release]
+    # create-release is skipped on branch pushes; still build (compile check) in that case.
+    if: ${{ !cancelled() && needs.check.result == 'success' && needs.create-release.result != 'failure' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { label: linux-amd64,    goos: linux,   goarch: amd64, goarm: "",  ext: "" }
+          - { label: linux-arm64,    goos: linux,   goarch: arm64, goarm: "",  ext: "" }
+          - { label: linux-armv7,    goos: linux,   goarch: arm,   goarm: "7", ext: "" }
+          - { label: linux-armv6,    goos: linux,   goarch: arm,   goarm: "6", ext: "" }
+          - { label: linux-386,      goos: linux,   goarch: "386", goarm: "",  ext: "" }
+          - { label: windows-amd64,  goos: windows, goarch: amd64, goarm: "",  ext: ".exe" }
+          - { label: windows-arm64,  goos: windows, goarch: arm64, goarm: "",  ext: ".exe" }
+          - { label: darwin-amd64,   goos: darwin,  goarch: amd64, goarm: "",  ext: "" }
+          - { label: darwin-arm64,   goos: darwin,  goarch: arm64, goarm: "",  ext: "" }
+          - { label: android-arm64,  goos: android, goarch: arm64, goarm: "",  ext: "" }
+          - { label: freebsd-amd64,  goos: freebsd, goarch: amd64, goarm: "",  ext: "" }
+          - { label: freebsd-arm64,  goos: freebsd, goarch: arm64, goarm: "",  ext: "" }
+          - { label: openbsd-amd64,  goos: openbsd, goarch: amd64, goarm: "",  ext: "" }
+
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: remote-manager/go.mod
+          cache: false
+
+      - name: Download Go modules (retries on network errors)
+        working-directory: remote-manager
+        run: |
+          for i in 1 2 3 4 5; do
+            go mod download && exit 0
+            echo "go mod download failed (attempt $i), retrying..."; sleep $((i * 10))
+          done
+          exit 1
+
+      - name: Build binary
+        working-directory: remote-manager
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm }}
+          CGO_ENABLED: 0
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF_NAME}"; BASE="${GITHUB_REF_NAME}"
+          else
+            VERSION="${APP_VERSION}-$(git rev-parse --short HEAD)"; BASE="${APP_VERSION}"
+          fi
+          OUTPUT="wrm-pro-${BASE}-${{ matrix.label }}${{ matrix.ext }}"
+          mkdir -p ../dist
+          go build -ldflags="-s -w -X main.AppVersion=${VERSION}" -trimpath -o "../dist/${OUTPUT}" .
+          echo "Built ${OUTPUT} (${VERSION}) — $(du -h "../dist/${OUTPUT}" | cut -f1)"
+
+      - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: gh release upload "${GITHUB_REF_NAME}" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+
+  # Linux portable desktop packages; separate from standalone service binaries.
+  appimage:
+    name: AppImage ${{ matrix.arch }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    needs: [check, create-release]
+    if: ${{ !cancelled() && needs.check.result == 'success' && needs.create-release.result != 'failure' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: remote-manager/go.mod
+          cache: false
+      - name: Build and check AppImage
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then VERSION="$GITHUB_REF_NAME"; else VERSION="$APP_VERSION-$(git rev-parse --short HEAD)"; fi
+          bash tools/build-appimage.sh "$VERSION" "${{ matrix.arch }}"
+      - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: gh release upload "$GITHUB_REF_NAME" dist/*.AppImage --repo "$GITHUB_REPOSITORY" --clobber
+
+  # ─────────────────────────────────────────────
+  #  Container image: built and smoke-tested on every run, published to
+  #  GitHub Container Registry (ghcr.io/<owner>/wrm-pro) for release tags
+  # ─────────────────────────────────────────────
+  docker:
+    name: Docker image
+    runs-on: ubuntu-24.04
+    needs: check
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      # Docker Hub rate-limits anonymous pulls from shared runners (429 Too Many Requests).
+      # Pull the base images of the Dockerfile from Google's Docker Hub mirror first, with a
+      # few retries and Docker Hub as the fallback; docker build then uses the local copies.
+      - name: Pull base images
+        run: |
+          awk 'toupper($1)=="FROM"{print $2}' Dockerfile | sort -u | while read -r img; do
+            for try in 1 2 3; do
+              if docker pull "mirror.gcr.io/library/${img}" && docker tag "mirror.gcr.io/library/${img}" "${img}"; then break; fi
+              if docker pull "${img}"; then break; fi
+              sleep $((try * 15))
+            done
+            docker image inspect "${img}" >/dev/null
+          done
+
+      - name: Build image
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then VERSION="${GITHUB_REF_NAME}"; else VERSION="${APP_VERSION}-$(git rev-parse --short HEAD)"; fi
+          docker build --build-arg VERSION="${VERSION}" -t wrm-pro:ci .
+          docker run --rm wrm-pro:ci -version
+
+      # Known vulnerabilities in the image's OS and npm packages (the Go binary is covered by
+      # govulncheck). Shows HIGH and CRITICAL; fails on a CRITICAL one that has a fix.
+      - name: Vulnerability scan of the image (report)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: wrm-pro:ci
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: '0'
+      - name: Vulnerability scan of the image (fail on fixable CRITICAL)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_SKIP_DB_UPDATE: 'true'
+        with:
+          image-ref: wrm-pro:ci
+          scanners: vuln
+          severity: CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: '1'
+
+      - name: Smoke test (starts, answers /healthz, container health check works)
+        run: |
+          docker run -d --name wrm -p 18080:8080 wrm-pro:ci
+          for _ in $(seq 1 30); do curl -fsS http://127.0.0.1:18080/healthz && break; sleep 1; done
+          echo
+          curl -fsS http://127.0.0.1:18080/healthz
+          docker exec wrm /usr/local/bin/wrm -healthcheck
+          docker logs wrm
+          docker rm -f wrm
+
+      - name: Publish to GitHub Container Registry
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          IMAGE="ghcr.io/$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')/wrm-pro"
+          echo "${GH_TOKEN}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+          docker tag wrm-pro:ci "${IMAGE}:${GITHUB_REF_NAME}"
+          docker tag wrm-pro:ci "${IMAGE}:latest"
+          docker push "${IMAGE}:${GITHUB_REF_NAME}"
+          docker push "${IMAGE}:latest"
+
+  # ─────────────────────────────────────────────
+  #  macOS universal binary + SHA-256 checksums (tags only)
+  # ─────────────────────────────────────────────
+  # ─────────────────────────────────────────────
+  #  Automatic release: when a push to main carries a new version (APP_VERSION, the same as
+  #  AppVersion in main.go and the top CHANGELOG section) and every build passed, tag that
+  #  commit and start this workflow on the tag. A tag pushed with the workflow token starts
+  #  no workflow by itself; workflow_dispatch is the documented exception.
+  # ─────────────────────────────────────────────
+  auto-release:
+    name: Tag new version
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write   # create the tag
+      actions: write    # start this workflow on the tag
+    needs: [build, appimage, docker]
+    # build and appimage depend on create-release, which is skipped on branch pushes: without
+    # !cancelled() the implicit success() check skips this job too.
+    if: ${{ !cancelled() && needs.build.result == 'success' && needs.appimage.result == 'success' && needs.docker.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    concurrency:
+      group: auto-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Tag and release when the version is new
+        run: |
+          set -euo pipefail
+          V="${APP_VERSION}"
+          if ! [[ "$V" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::APP_VERSION '$V' is not vX.Y.Z"; exit 1
+          fi
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${V}" >/dev/null 2>&1; then
+            echo "Tag $V already exists: nothing to release."; exit 0
+          fi
+          code=$(grep -oE 'AppVersion = "v[0-9.]+"' remote-manager/main.go | grep -oE 'v[0-9.]+')
+          top=$(grep -m1 -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md | tr -d '#[] ')
+          if [ "$code" != "$V" ] || [ "v$top" != "$V" ]; then
+            echo "::error::Version mismatch: APP_VERSION $V, AppVersion $code, CHANGELOG $top. Not releasing."; exit 1
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/git/refs" -f "ref=refs/tags/${V}" -f "sha=${GITHUB_SHA}" >/dev/null
+          echo "Created tag $V on ${GITHUB_SHA}."
+          gh workflow run build.yml --repo "$GITHUB_REPOSITORY" --ref "$V"
+          echo "::notice::Release $V started: the workflow now runs on the tag."
+
+  finalize:
+    name: Verify assets & publish release
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      id-token: write      # build provenance: a short-lived Sigstore certificate for this workflow
+      attestations: write
+    needs: [build, appimage, docker]
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: 'stable'
+          cache: false
+
+      - name: Download release binaries
+        run: |
+          mkdir -p dist && cd dist
+          gh release download "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" --pattern 'wrm-pro-*'
+          ls -la
+
+      - name: Create macOS universal binary
+        run: |
+          set -euo pipefail
+          cd dist
+          BASE="${GITHUB_REF_NAME}"   # file names follow the tag
+          OUT="wrm-pro-${BASE}-darwin-universal"
+          if command -v llvm-lipo >/dev/null 2>&1; then
+            LIPO=llvm-lipo
+          else
+            go install github.com/konoui/lipo@v0.10.0
+            LIPO="$(go env GOPATH)/bin/lipo"
+          fi
+          "$LIPO" -create "wrm-pro-${BASE}-darwin-amd64" "wrm-pro-${BASE}-darwin-arm64" -output "$OUT"
+          file "$OUT"
+          gh release upload "${GITHUB_REF_NAME}" "$OUT" --repo "$GITHUB_REPOSITORY" --clobber
+
+      - name: SHA-256 checksums
+        run: |
+          cd dist
+          rm -f SHA256SUMS.txt
+          sha256sum wrm-pro-* | sort > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          gh release upload "${GITHUB_REF_NAME}" SHA256SUMS.txt --repo "$GITHUB_REPOSITORY" --clobber
+
+      # ed25519 signature of SHA256SUMS.txt with the release key (repository secret
+      # RELEASE_SIGNING_KEY, made with `wrm -release-keygen`). WRM's self-update refuses an
+      # unsigned release once its public key is built in, so a build with a built-in key and no
+      # secret fails here instead of publishing a release nobody can update to.
+      - name: Sign SHA256SUMS.txt
+        env:
+          WRM_RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+        run: |
+          set -euo pipefail
+          cd dist
+          WRM="./wrm-pro-${GITHUB_REF_NAME}-linux-amd64"
+          chmod +x "$WRM"
+          # Captured first: with pipefail, piping the failing command into grep made the
+          # check always report a built-in key.
+          builtin=1
+          probe=$("$WRM" -release-verify /dev/null 2>&1 || true)
+          case "$probe" in *"has no release key"*) builtin=0 ;; esac
+          if [ -z "$WRM_RELEASE_SIGNING_KEY" ]; then
+            if [ "$builtin" = 1 ]; then
+              echo "::error::RELEASE_SIGNING_KEY is not set, but this WRM has a built-in release key: its self-update would refuse this release."
+              exit 1
+            fi
+            echo "::warning::Release not signed: the repository secret RELEASE_SIGNING_KEY is not set (see SECURITY.md, Signed releases)."
+            exit 0
+          fi
+          "$WRM" -release-sign SHA256SUMS.txt
+          if [ "$builtin" = 1 ]; then
+            "$WRM" -release-verify SHA256SUMS.txt
+          fi
+          gh release upload "${GITHUB_REF_NAME}" SHA256SUMS.txt.sig --repo "$GITHUB_REPOSITORY" --clobber
+
+      # The Claude plugin as a zip for Claude → Customize → Plugins → Upload plugin (works
+      # without adding the marketplace). Not a wrm-pro-* package, so not in SHA256SUMS.txt.
+      - name: Claude plugin package
+        run: |
+          set -euo pipefail
+          (cd packaging/claude-plugin/wrm-pro && zip -r -X ../../../dist/claude-plugin-wrm-pro.zip . -x '.gitignore' '.mcpb-cache/*')
+          unzip -l dist/claude-plugin-wrm-pro.zip
+          gh release upload "${GITHUB_REF_NAME}" dist/claude-plugin-wrm-pro.zip --repo "$GITHUB_REPOSITORY" --clobber
+      - name: SBOM (CycloneDX)
+        run: |
+          set -euo pipefail
+          cd remote-manager
+          go run github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.12.0 app -json -licenses=false \
+            -output "../dist/sbom-${GITHUB_REF_NAME}.cdx.json" .
+          gh release upload "${GITHUB_REF_NAME}" "../dist/sbom-${GITHUB_REF_NAME}.cdx.json" --repo "$GITHUB_REPOSITORY" --clobber
+
+      # GitHub build provenance (SLSA, signed with Sigstore): `gh attestation verify <file>
+      # --repo vedranius/wrm-pro-enterprise` shows which workflow and commit built a file.
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/wrm-pro-*
+            dist/SHA256SUMS.txt
+            dist/sbom-*.cdx.json
+            dist/claude-plugin-wrm-pro.zip
+
+      - name: Verify complete asset set and publish
+        run: |
+          python3 tools/verify-release-assets.py "$GITHUB_REF_NAME" dist
+          gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+
+  # ─────────────────────────────────────────────
+  #  MCP Registry: start mcp-registry.yml for the new release (GitHub OIDC, no stored secret)
+  # ─────────────────────────────────────────────
+  mcp-registry:
+    name: Start MCP Registry publish
+    runs-on: ubuntu-24.04
+    needs: finalize
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      actions: write   # workflow_dispatch of mcp-registry.yml
+    steps:
+      - name: Dispatch mcp-registry.yml
+        run: gh workflow run mcp-registry.yml --repo "$GITHUB_REPOSITORY" --ref main -f tag="$GITHUB_REF_NAME"

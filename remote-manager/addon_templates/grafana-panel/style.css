@@ -1,0 +1,14 @@
+/* Copyright 2026 vedranius and WRM contributors
+   SPDX-License-Identifier: Apache-2.0 */
+
+:root { color-scheme: light dark; }
+body { margin: 0; font: 14px var(--font-ui, system-ui, sans-serif); background: var(--bg, #111827); color: var(--text, #e5e7eb); }
+main { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+h1 { font-size: 16px; margin: 0; }
+textarea { width: 100%; box-sizing: border-box; background: var(--bg2, #1f2937); color: inherit; border: 1px solid var(--border, #374151); border-radius: var(--radius, 6px); padding: 6px; font: inherit; }
+button { align-self: flex-start; background: var(--accent, #3b82f6); color: #fff; border: 0; border-radius: var(--radius, 6px); padding: 6px 14px; cursor: pointer; }
+table { border-collapse: collapse; width: 100%; }
+td, th { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--border, #374151); }
+.muted { color: var(--text3, #9ca3af); }
+.bad { color: var(--red, #ef4444); }
+.ok { color: var(--green, #22c55e); }

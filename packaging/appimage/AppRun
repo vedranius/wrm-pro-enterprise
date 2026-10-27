@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+app_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+data_dir=${XDG_DATA_HOME:-"$HOME/.local/share"}/wrm-pro
+mkdir -p "$data_dir"
+if [ -z "${DB_PATH:-}" ]; then
+    DB_PATH=$data_dir/remote_manager.db
+elif [ "${DB_PATH#/}" = "$DB_PATH" ]; then
+    DB_PATH=$PWD/$DB_PATH
+fi
+export DB_PATH
+export WRM_APPIMAGE=1 WRM_NO_SERVICE_PROMPT=1
+# Portable desktop launches bind locally; explicit user settings take precedence.
+export LISTEN_ADDR=${LISTEN_ADDR:-127.0.0.1:${PORT:-8080}}
+cd "$data_dir"
+exec "$app_dir/usr/bin/wrm" "$@"

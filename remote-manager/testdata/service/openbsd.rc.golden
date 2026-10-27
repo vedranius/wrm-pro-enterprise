@@ -1,0 +1,17 @@
+#!/bin/ksh
+#
+# Web Remote Manager PRO service, written by -install-service.
+# Settings: /var/db/wrm/wrm.env
+# Enable: rcctl enable wrm
+
+daemon=/usr/local/wrm/wrm-pro-v11.7.0-openbsd-amd64
+daemon_flags='-service=rcd-openbsd -env-file /var/db/wrm/wrm.env -workdir /usr/local/wrm'
+daemon_user=wrm
+daemon_logger="daemon.info"
+
+. /etc/rc.d/rc.subr
+
+rc_bg=YES
+rc_reload=NO
+
+rc_cmd $1

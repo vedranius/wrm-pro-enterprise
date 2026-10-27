@@ -1,0 +1,45 @@
+//go:build tinygo
+
+// A WRM addon hook for TinyGo. Build it with
+//
+//	tinygo build -o plugin.wasm -target=wasm-unknown -no-debug .
+//
+// The template ships a tiny plugin.wasm made by WRM that answers {"ok":true}
+// so the addon installs right away; replace it with your build.
+//
+// The host calls wrm_alloc(size) for the input, then status(ptr, len), and
+// reads the NUL-terminated UTF-8 string at the returned pointer. 64 KiB input,
+// 1 MB output, 5 seconds per call. The only import is wrm.log(ptr, len).
+package main
+
+import "unsafe"
+
+//go:wasmimport wrm log
+func wrmLog(ptr, n uint32)
+
+var input [64 << 10]byte
+var output []byte
+
+//export wrm_alloc
+func wrmAlloc(size uint32) uint32 {
+	return uint32(uintptr(unsafe.Pointer(&input[0])))
+}
+
+//export status
+func status(ptr, n uint32) uint32 {
+	msg := "status called"
+	wrmLog(uint32(uintptr(unsafe.Pointer(unsafe.StringData(msg)))), uint32(len(msg)))
+	output = append(output[:0], `{"ok":true,"input_bytes":`...)
+	output = appendInt(output, int(n))
+	output = append(output, '}', 0)
+	return uint32(uintptr(unsafe.Pointer(&output[0])))
+}
+
+func appendInt(b []byte, v int) []byte {
+	if v >= 10 {
+		b = appendInt(b, v/10)
+	}
+	return append(b, byte('0'+v%10))
+}
+
+func main() {}

@@ -1,0 +1,17 @@
+{
+  "apiVersion": 2,
+  "id": "example.blank",
+  "name": "Blank panel",
+  "version": "0.1.0",
+  "description": "A starting point: a window with a note kept on the WRM server.",
+  "author": "",
+  "license": "MIT",
+  "capabilities": ["ui.panel", "store", "notify"],
+  "ui": {
+    "panel": "panel.html",
+    "title": "Blank panel",
+    "defaultSize": { "w": 420, "h": 280 },
+    "minSize": { "w": 260, "h": 160 }
+  },
+  "store": { "quotaKb": 16 }
+}

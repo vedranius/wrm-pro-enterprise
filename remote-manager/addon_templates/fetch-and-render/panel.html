@@ -1,0 +1,27 @@
+<!-- Copyright 2026 vedranius and WRM contributors
+     SPDX-License-Identifier: Apache-2.0 -->
+
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <form id="settings">
+      <input id="path" placeholder="/api/status" aria-label="Path">
+      <select id="every" aria-label="Refresh">
+        <option value="15">15 s</option>
+        <option value="60" selected>60 s</option>
+        <option value="300">5 min</option>
+      </select>
+      <button id="apply" type="submit">Apply</button>
+    </form>
+    <p id="state" class="muted"></p>
+    <table id="out"></table>
+  </main>
+  <script src="wrm-bridge.js"></script>
+  <script src="panel.js"></script>
+</body>
+</html>

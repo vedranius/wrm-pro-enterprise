@@ -1,0 +1,37 @@
+# Web Remote Manager PRO service, written by wrm-pro-v11.7.0-linux-arm64 -install-service.
+# Settings: /srv/remote tools/wrm.env (edit, then: systemctl restart wrm)
+[Unit]
+Description=Web Remote Manager PRO
+Documentation=https://github.com/vedranius/wrm-pro-enterprise
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=ops
+WorkingDirectory=/srv/remote tools
+EnvironmentFile=/srv/remote tools/wrm.env
+ExecStart="/srv/remote tools/wrm-pro-v11.7.0-linux-arm64" -service=systemd
+Restart=on-failure
+RestartSec=3
+# Exit code 75: WRM asks to be started again (self-update, newer binary in its folder).
+SuccessExitStatus=75
+RestartForceExitStatus=75
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths="/srv/remote tools"
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

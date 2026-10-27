@@ -1,0 +1,11 @@
+{
+  "apiVersion": 2,
+  "id": "example.hook",
+  "name": "WebAssembly hook",
+  "version": "0.1.0",
+  "description": "Server code that WRM runs in its WebAssembly sandbox (no files, no network, no clock).",
+  "author": "",
+  "license": "MIT",
+  "capabilities": ["server.wasm"],
+  "server": { "module": "plugin.wasm", "exports": ["status"] }
+}

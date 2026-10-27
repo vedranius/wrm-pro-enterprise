@@ -1,0 +1,124 @@
+name: Nightly security tests
+
+# Slower security tests than every push can afford (see SECURITY.md → "Continuous security
+# checks"): Go fuzzing of the parsers for uploaded and pasted files, and an OWASP ZAP scan of
+# a running WRM, without and with a signed-in administrator. Every night and on demand.
+
+on:
+  schedule:
+    - cron: '23 2 * * *'
+  # A pull request that changes these tests runs them briefly, so they are known to work.
+  pull_request:
+    branches: [main, master]
+    paths:
+      - '.github/workflows/nightly.yml'
+      - 'remote-manager/fuzz_test.go'
+  workflow_dispatch:
+    inputs:
+      fuzztime:
+        description: 'Fuzzing time per target (Go duration)'
+        default: '4m'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fuzz:
+    name: Fuzz ${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - FuzzImportMRemoteNG
+          - FuzzImportSSHConfig
+          - FuzzParseTableFile
+          - FuzzParsePuttyReg
+          - FuzzParseWinSCPBookmarks
+          - FuzzParseGitConfig
+          - FuzzMediumConfigYAML
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: remote-manager/go.mod
+          cache: false
+      - name: Fuzz
+        working-directory: remote-manager
+        env:
+          TARGET: ${{ matrix.target }}
+          FUZZTIME: ${{ github.event_name == 'pull_request' && '30s' || inputs.fuzztime || '4m' }}
+        run: go test -run '^$' -fuzz "^${TARGET}\$" -fuzztime "$FUZZTIME" .
+      # A crash leaves its input in testdata/fuzz/<target>/: add that file to the repository
+      # with the fix, so the input stays a regression test.
+      - name: Keep the crashing input
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fuzz-${{ matrix.target }}
+          path: remote-manager/testdata/fuzz/
+          if-no-files-found: ignore
+
+  zap:
+    name: OWASP ZAP baseline
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: remote-manager/go.mod
+          cache: false
+      - name: Start WRM with an empty database
+        run: |
+          set -euo pipefail
+          (cd remote-manager && go build -o "$RUNNER_TEMP/wrm" .)
+          mkdir -p "$RUNNER_TEMP/wrm-data"
+          cd "$RUNNER_TEMP/wrm-data"
+          PORT=8443 DB_PATH="$RUNNER_TEMP/wrm-data/wrm.db" HTTPS_SELF_SIGNED=1 nohup "$RUNNER_TEMP/wrm" -no-service-prompt > wrm.log 2>&1 &
+          for _ in $(seq 1 60); do
+            curl -skf https://127.0.0.1:8443/healthz && exit 0
+            sleep 1
+          done
+          cat wrm.log
+          exit 1
+      # The first account becomes the administrator; its session cookie lets the second scan
+      # see what a signed-in administrator sees. The password is random and only lives here.
+      - name: Create the administrator for the signed-in scan
+        run: |
+          set -euo pipefail
+          PW="Zap-$(openssl rand -hex 16)"
+          curl -skf -c "$RUNNER_TEMP/cookies" -H 'X-WRM-Request: 1' -H 'Content-Type: application/json' \
+            -H 'Origin: https://127.0.0.1:8443' -X POST https://127.0.0.1:8443/api/auth/register \
+            -d "{\"username\":\"zapadmin\",\"password\":\"$PW\"}" > /dev/null
+          test -n "$(awk '$6 == "wrm_session" {print $7}' "$RUNNER_TEMP/cookies")"
+      - name: ZAP baseline (signed out and signed in)
+        run: |
+          set -uo pipefail
+          SESSION="$(awk '$6 == "wrm_session" {print $7}' "$RUNNER_TEMP/cookies")"
+          echo "::add-mask::$SESSION"
+          mkdir -p zap && chmod 777 zap
+          IMAGE=ghcr.io/zaproxy/zaproxy:stable
+          docker pull -q "$IMAGE"
+          status=0
+          docker run --rm --network host -v "$PWD/zap:/zap/wrk:rw" "$IMAGE" \
+            zap-baseline.py -t https://127.0.0.1:8443/ -I -j -r signed-out.html -J signed-out.json || status=1
+          docker run --rm --network host -v "$PWD/zap:/zap/wrk:rw" "$IMAGE" \
+            zap-baseline.py -t https://127.0.0.1:8443/ -I -j -r signed-in.html -J signed-in.json \
+            -z "-config replacer.full_list(0).description=session -config replacer.full_list(0).enabled=true -config replacer.full_list(0).matchtype=REQ_HEADER -config replacer.full_list(0).matchstr=Cookie -config replacer.full_list(0).regex=false -config replacer.full_list(0).replacement=wrm_session=${SESSION}" || status=1
+          # -I: warnings are reported, only FAIL rules (and a scan that could not run) fail the job
+          exit $status
+      - name: ZAP reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: zap-reports
+          path: zap/
+          if-no-files-found: warn

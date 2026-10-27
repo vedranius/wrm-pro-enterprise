@@ -1,0 +1,15 @@
+# gitleaks configuration (run by .github/workflows/security.yml on every push and pull request).
+# The default rules apply. Allowed: third-party vendor files and names that only look like
+# secrets, and Go test files (their fixtures are invented keys and tokens; GitHub secret
+# scanning still checks them for real provider tokens).
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Vendored third-party libraries"
+paths = ['''remote-manager/static/vendor/''', '''_test\.go$''']
+
+[[allowlists]]
+description = "Identifiers that only look like secrets"
+regexTarget = "match"
+regexes = ['''VOICE_PREFS_KEY\s*=''', '''keys, vault/Bitwarden''']

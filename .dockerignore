@@ -1,0 +1,16 @@
+.git
+.github
+**/*.db
+**/*.db-*
+**/*.db.key
+**/recordings
+**/dist
+**/wrm-server
+*.md
+!README.md
+
+**/*.medium
+**/*.bitwarden
+
+**/__pycache__
+**/*.pyc

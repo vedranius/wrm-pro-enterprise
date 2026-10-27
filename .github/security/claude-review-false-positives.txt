@@ -1,0 +1,13 @@
+Not findings in WRM PRO (do not report these unless the change makes them reachable by an
+attacker who should not have them):
+- WRM runs commands and opens terminals on servers by design. A signed-in user running a command
+  on a connection they own, or that is shared with them with a terminal-capable role, is intended.
+- Administrators can change every policy, run self-update, read the audit log and manage users.
+  Problems that need an administrator account are out of scope (SECURITY.md).
+- Users configure URLs of their own Git servers, AI providers, NetBox, BMCs and notification
+  channels; WRM connecting to those URLs is intended. Skipping TLS verification where the user
+  chose "allow self-signed" is intended.
+- MD5/SHA-1 used for compatibility (mRemoteNG password decryption, TOTP per RFC 6238, Git object
+  IDs) and not for protecting new data.
+- Test files (*_test.go, tools/test-*.js) and invented secrets in them.
+- Files under remote-manager/static/vendor/ (third-party libraries).

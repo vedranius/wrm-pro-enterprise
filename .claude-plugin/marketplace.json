@@ -1,0 +1,18 @@
+{
+  "name": "wrm-pro",
+  "owner": {
+    "name": "vedranius",
+    "url": "https://github.com/vedranius"
+  },
+  "metadata": {
+    "description": "Claude Code plugin that connects WRM PRO (the self-hosted remote server manager) as an MCP server."
+  },
+  "plugins": [
+    {
+      "name": "wrm-pro",
+      "source": "./packaging/claude-plugin/wrm-pro",
+      "description": "Connect Claude Code to your WRM PRO over MCP (enter the WRM MCP address and a token from WRM → Settings → AI connections), with skills for safe server work and Linux incident triage.",
+      "category": "devops"
+    }
+  ]
+}

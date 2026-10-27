@@ -1,0 +1,56 @@
+# WRM PRO addons
+
+> How to write an addon for WRM PRO {{VERSION}}, a self-hosted browser-based server manager. An addon is a ZIP with addon.json at its root; WRM installs it off, shows a permission sheet generated from addon.json, and runs its panel in a sandboxed window without a network of its own.
+
+## Workflow
+
+1. Start from a template: `wrm -addon-new blank ./my-addon` (templates: blank, fetch-and-render, grafana-panel, wasm-hook), or download one from /api/addons/dev/templates/{name}.zip.
+2. Edit addon.json (schema: /api/addons/dev/schema.json) and the panel files.
+3. Check it: `wrm -addon-lint ./my-addon` (or `-addon-lint-json` for machine output; POST a ZIP to /api/addons/dev/lint). Every finding is {level, code, message, file, line, hint}. Fix all errors; warnings name what the sandbox will refuse at run time.
+4. Try it: `wrm -addon-dev ./my-addon` serves the panel with the real CSP and a stand-in for WRM (store in memory, web requests sent by the dev server, secrets from WRM_ADDON_SECRET_<NAME> variables) and reloads it when a file changes.
+5. Zip the folder and install it in Settings → Addons. Nothing runs at install time; every file is pinned by SHA-256.
+
+## addon.json (apiVersion 2)
+
+- Unknown fields are rejected (E_MANIFEST_FIELD). Required: apiVersion 2, id (lowercase, 2-64 chars, letters digits . - _), name (1-80), version (dotted numbers), capabilities.
+- Capabilities: ui.panel (a window: ui.panel, ui.title, ui.defaultSize, ui.minSize), ui.theme (ui.themes: id, name, name_hr, mode light|dark, tokens of CSS variables and/or css), store (store.quotaKb 1-1024, store.shared), notify, http (http.origins, paths, methods, secrets), server.wasm (server.module, server.exports; organisation addons only, administrators install them).
+- store, notify and http need a panel.
+
+## The panel
+
+- An HTML file in an iframe with sandbox="allow-scripts" (opaque origin) and this CSP: default-src 'none'; script-src 'self' plus the SHA-256 of each inline script; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'.
+- So: no fetch, XHR, WebSocket or EventSource; no localStorage, sessionStorage, IndexedDB or cookies; no remote scripts, stylesheets, fonts or images; no inline event handlers (onclick=…), javascript: links, eval or new Function. Put every file into the ZIP and use addEventListener.
+- WRM runs no background jobs for addons: poll only while the window is visible (wrm:visibility) and leave 24/7 alerting to the monitored system.
+
+## The bridge (window.parent.postMessage(message, '*'), every message carries v: 2)
+
+Panel to WRM:
+- {v:2, type:'wrm:ready'} within 5 seconds of loading; {v:2, type:'wrm:heartbeat'} every 15 seconds.
+- {v:2, type:'wrm:context'} asks for the context again.
+- {v:2, type:'wrm:store.get', id, key} and {v:2, type:'wrm:store.set', id, key, value} (JSON, 32 KB per value).
+- {v:2, type:'wrm:notify', text, level} (info, success, warn, error; 200 characters, 5 a minute).
+- {v:2, type:'wrm:http', id, method, url, headers: {Accept, Content-Type, Range}, body, encoding: 'base64' for bytes, secret: '<name from http.secrets>'}.
+- {v:2, type:'wrm:resize', w, h}; {v:2, type:'wrm:error', message, source, line}.
+
+WRM to panel:
+- wrm:context {user: {id, name}, lang ('en' or 'hr'), theme: {CSS variables}, addon: {id, key, version, instance, instanceName}, config: {stored values}, features: {store, notify, http, visibility}, http: {origins, approved, ready: {secret name: true if a value is set}}, size, visible}.
+- wrm:theme {theme}; wrm:visibility {visible}; wrm:store {id, key, value} or {id, key, error, code}; wrm:http {id, ok, status, headers, body, encoding 'text'|'base64', truncated} or {id, ok: false, error, code}; wrm:fatal {code, message}.
+
+The templates ship wrm-bridge.js, which wraps all of this: wrm.ready(), wrm.on('context'|'theme'|'visibility', fn), wrm.storeGet(key, fallback), wrm.storeSet(key, value), wrm.notify(text, level), wrm.http(request), wrm.t(en, hr).
+
+## Web sites and secrets (http capability)
+
+- http.origins: 1-8 exact origins (https://host[:port], lowercase, no path). http.paths: exact paths or prefixes ending in * (default /*). http.methods: GET (default), HEAD, POST, PUT, PATCH, DELETE.
+- An administrator approves the origins; personal addons wait for that approval (E_HTTP_UNAPPROVED). Private, local, link-local and CGNAT addresses are refused (E_HTTP_BLOCKED) unless the administrator approved the origin as private network; plain http:// needs the same approval (E_HTTP_SCHEME).
+- Limits: 256 KB request, 8 MB response, 10 s, 3 redirects (checked again), 120 requests a minute and 20 at once per instance.
+- http.secrets: "name" (Authorization: Bearer), "basic:name" (user:password) or "header:X-Api-Key:name". Users enter the values in WRM (Settings → Addons → Instances → Secrets); the panel names the secret and never sees it. Never put tokens, passwords or internal host names into the ZIP.
+
+## Error codes
+
+API and bridge: E_MANIFEST, E_MANIFEST_FIELD, E_API_VERSION, E_MISSING_FILE, E_LIMIT_SIZE, E_LIMIT_QUOTA, E_LIMIT_COUNT, E_LIMIT_RATE, E_STORE_KEY, E_STORE_VALUE, E_STORE_READONLY, E_CAPABILITY, E_DISABLED, E_INTEGRITY, E_DOWNGRADE, E_PERSONAL_OFF, E_PERSONAL_SERVER, E_NOT_FOUND, E_HTTP_REQUEST, E_HTTP_ORIGIN, E_HTTP_PATH, E_HTTP_METHOD, E_HTTP_UNAPPROVED, E_HTTP_SCHEME, E_HTTP_BLOCKED, E_HTTP_REDIRECT, E_HTTP_SECRET, E_SECRET_MISSING, E_HTTP_TIMEOUT, E_HTTP_UPSTREAM, E_HTTP_OFF.
+
+Lint: E_LINT_REMOTE, E_LINT_INLINE_HANDLER, E_LINT_JS_URL, E_LINT_EVAL, E_LINT_NETWORK, E_LINT_STORAGE, E_LINT_SECRET, E_LINT_ORIGIN, E_LINT_READY, E_LINT_HEARTBEAT, E_LINT_CAPABILITY, E_LINT_UNSERVED, E_LINT_V1, E_LINT_SERVER, E_LINT_HIDDEN, E_WASM.
+
+## server.wasm
+
+WebAssembly run by wazero with no WASI (no files, network, environment or clock). The only import is wrm.log(ptr, len). Export memory, wrm_alloc(size) -> ptr and each declared export as (ptr, len) -> ptr returning a NUL-terminated UTF-8 string. 64 KiB input, 1 MB output, 5 seconds per call, 64 MiB memory.

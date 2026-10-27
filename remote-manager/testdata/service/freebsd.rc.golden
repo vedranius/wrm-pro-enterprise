@@ -1,0 +1,25 @@
+#!/bin/sh
+#
+# PROVIDE: wrm
+# REQUIRE: LOGIN NETWORKING
+# KEYWORD: shutdown
+#
+# Web Remote Manager PRO service, written by -install-service.
+# Settings: /var/db/wrm/wrm.env
+# Enable: sysrc wrm_enable=YES
+
+. /etc/rc.subr
+
+name="wrm"
+rcvar="wrm_enable"
+
+load_rc_config $name
+
+: ${wrm_enable:="NO"}
+: ${wrm_user:="wrm"}
+
+pidfile="/var/run/${name}.pid"
+command="/usr/sbin/daemon"
+command_args="-r -R 3 -P ${pidfile} -u ${wrm_user} -o /var/db/wrm/wrm-service.log -- /usr/local/wrm/wrm-pro-v11.7.0-freebsd-amd64 -service=rcd -env-file /var/db/wrm/wrm.env -workdir /usr/local/wrm"
+
+run_rc_command "$1"

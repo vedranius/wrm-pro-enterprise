@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=WRM PRO
+Comment=Web Remote Manager — open localhost:8080 in your browser
+Exec=AppRun
+Icon=wrm
+Terminal=true
+Categories=Network;System;
+StartupNotify=false

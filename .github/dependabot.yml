@@ -1,0 +1,22 @@
+# Weekly dependency updates. Minor and patch updates are grouped into one pull request per
+# ecosystem; security updates come as soon as an advisory is published.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /remote-manager
+    schedule:
+      interval: weekly
+    groups:
+      go-modules:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        update-types: [minor, patch]
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly

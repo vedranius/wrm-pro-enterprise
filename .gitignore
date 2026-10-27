@@ -1,0 +1,34 @@
+# Build output
+dist/
+remote-manager/wrm-server
+remote-manager/wrm-server.exe
+remote-manager/webremotemanager
+remote-manager/webremotemanager.exe
+wrm-pro-*
+
+# Local databases (contain users, sessions and encrypted connection secrets — never commit!)
+*.db
+*.db-shm
+*.db-wal
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# WRM secrets next to the database (keep them private!)
+*.db.key
+wrm-selfsigned.crt
+wrm-selfsigned.key
+
+# Session recordings (terminal output of real sessions — never commit!)
+recordings/
+
+# Private original deploy-tool/config/SSH runtimes and encrypted Bitwarden caches
+*.medium/
+*.bitwarden/
+
+# Python bridge bytecode
+__pycache__/
+*.py[cod]

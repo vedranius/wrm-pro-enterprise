@@ -1,0 +1,48 @@
+WRM PRO security review checklist (used by the Claude security review workflow and by the
+wrm-security-review skill in .claude/skills/). WRM is a self-hosted web app that holds SSH,
+RDP/VNC and BMC credentials and opens terminals on company servers, so a bug in it can hand an
+attacker those servers. Review the change against these points in addition to the usual ones.
+
+Trust boundaries and who the attacker can be:
+- no account (sign-in page, share links, incoming webhooks under /api/hooks/, MCP OAuth endpoints);
+- a guest of a link share, a share member with a low role (observer, viewer);
+- a signed-in user who is not an administrator (must never reach another user's connections,
+  credentials, sessions, recordings, AI transcripts or MCP tokens);
+- an AI model or MCP client acting for a user (its output and the server output it reads are
+  untrusted input: prompt injection);
+- text and files coming from managed servers (terminal output, file names, Git repositories,
+  deploy-config YAML, imports from mRemoteNG / CSV / XLSX / SSH config).
+
+Check in particular:
+1. Authorization: every new or changed /api/ handler calls requireAuth or requireAdmin (or the
+   share/role check) and scopes every database query to the user (user_id / owner_id) or to a
+   share role that allows the action (roleCan). Look for IDs taken from the request and used
+   without an ownership check (IDOR).
+2. Sessions and CSRF: state-changing requests keep going through securityMiddleware (X-WRM-Request
+   header and same-origin check); no new exception besides /api/hooks/ without a secret check.
+   Restricted sessions (must change password, must set up 2FA) only reach restrictedAllowedPaths.
+3. Secrets: passwords, private keys, tokens and TOTP secrets are stored with encryptValue, never
+   returned to the browser, never written to logs, and audit details use neutral keys (cred_id),
+   because keys containing password/token/credential/private_key are redacted.
+4. Command execution: commands run on remote servers or locally (exec.Command, SSH sessions,
+   Docker, PowerShell) must not be built by concatenating untrusted text into a shell string;
+   arguments are passed as separate argv items or quoted with the existing helpers.
+5. Paths: file names from requests, archives (ZIP/tar bundles), imports or remote servers must not
+   escape their directory (.., absolute paths, symlinks, Windows drive letters and UNC paths).
+6. Outbound requests: URLs supplied by users (Git sources, AI providers, NetBox, Redfish/BMC,
+   notification webhooks) can reach internal networks; check that new ones are limited to who
+   may configure them and that TLS verification is only skipped where the user chose it.
+7. Browser: the UI is inline JavaScript with a CSP that allows inline scripts, so any HTML built
+   from server, terminal, file, share-chat or AI text without escaping is a stored XSS with the
+   full power of the session. Check innerHTML / insertAdjacentHTML with such values.
+8. AI and MCP: new tools respect the user's AI policy (read_only / ask / auto, ai_full_access,
+   ai_blocked_commands, ai_read_deny_paths, sensitive reads) and ask for approval before changes;
+   MCP tokens are checked for scope, expiry and a disabled account.
+9. Audit: security-relevant actions write an audit entry (auditLog / auditLogRef); the audit
+   table stays append-only.
+10. Database: migrations stay additive (CREATE TABLE IF NOT EXISTS, ALTER TABLE ADD COLUMN); SQL
+    uses placeholders for values; table or column names are never taken from requests.
+11. Limits: request bodies, uploads, archives and decompression have size limits.
+
+Report only problems with a concrete path from one of the attackers above to the impact. Name
+the attacker, the request or input, and the effect.

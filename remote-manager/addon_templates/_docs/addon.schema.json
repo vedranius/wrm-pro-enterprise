@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wrm-addon-manifest-v2",
+  "title": "WRM PRO addon.json (apiVersion 2)",
+  "description": "The manifest of a WRM PRO addon. WRM validates every rule again on install; wrm -addon-lint reports the same errors with codes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "id", "name", "version", "capabilities"],
+  "properties": {
+    "apiVersion": { "const": 2, "description": "2 for this schema. Leave it out only for a v1 addon." },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$", "description": "Unique id, 2-64 characters: lowercase letters, digits, dot, dash, underscore." },
+    "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "version": { "type": "string", "minLength": 1, "maxLength": 32, "description": "Dotted numbers compare as numbers (1.10.0 is newer than 1.9.3)." },
+    "description": { "type": "string" },
+    "author": { "type": "string" },
+    "license": { "type": "string" },
+    "homepage": { "type": "string" },
+    "capabilities": {
+      "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true,
+      "items": { "enum": ["ui.panel", "ui.theme", "store", "notify", "http", "server.wasm"] },
+      "description": "The grant list. Every block needs its capability and every capability its block."
+    },
+    "ui": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "panel": { "type": "string", "pattern": "^[^/\\\\].*\\.html$", "description": "Relative .html file in the ZIP (ui.panel capability)." },
+        "theme": { "type": "string", "pattern": "^[^/\\\\].*\\.css$", "description": "v1 style: one stylesheet offered as a theme (ui.theme capability)." },
+        "title": { "type": "string", "maxLength": 80 },
+        "icon": { "type": "string" },
+        "defaultSize": { "$ref": "#/$defs/size" },
+        "minSize": { "$ref": "#/$defs/size" },
+        "themes": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/theme" } }
+      }
+    },
+    "store": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "quotaKb": { "type": "integer", "minimum": 1, "maximum": 1024, "default": 64, "description": "Settings per instance in KB (32 KB per value)." },
+        "shared": { "type": "boolean", "description": "One set of values for everybody in a shared instance, written by administrators." }
+      }
+    },
+    "http": {
+      "type": "object", "additionalProperties": false, "required": ["origins"],
+      "description": "Web sites the panel may reach through WRM (http capability). An administrator approves the origins.",
+      "properties": {
+        "origins": {
+          "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^https?://[a-z0-9.-]+(:[0-9]{1,5})?$" },
+          "description": "Exact scheme://host[:port], lowercase, no path, no default port. http:// only for an origin approved as private network."
+        },
+        "paths": {
+          "type": "array", "maxItems": 16, "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^/[^\\s?#]*$" },
+          "description": "Exact paths, or prefixes ending in * (/api/*). Default /*."
+        },
+        "methods": {
+          "type": "array", "uniqueItems": true,
+          "items": { "enum": ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"] },
+          "description": "Default GET."
+        },
+        "secrets": {
+          "type": "array", "maxItems": 8, "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^(bearer:|basic:|header:[A-Za-z0-9][A-Za-z0-9-]{0,39}:)?[a-z0-9][a-z0-9_]{0,31}$" },
+          "description": "name (Authorization: Bearer), basic:name (value user:password) or header:X-Name:name. Values are entered in WRM."
+        }
+      }
+    },
+    "server": {
+      "type": "object", "additionalProperties": false, "required": ["module", "exports"],
+      "description": "WebAssembly server code (server.wasm capability, organisation addons only).",
+      "properties": {
+        "module": { "type": "string", "pattern": "^[^/\\\\].*\\.wasm$" },
+        "exports": { "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$" } }
+      }
+    }
+  },
+  "$defs": {
+    "size": {
+      "type": "object", "additionalProperties": false, "required": ["w", "h"],
+      "properties": { "w": { "type": "integer", "minimum": 160, "maximum": 4000 }, "h": { "type": "integer", "minimum": 120, "maximum": 4000 } }
+    },
+    "theme": {
+      "type": "object", "additionalProperties": false, "required": ["id", "name", "mode"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,31}$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "name_hr": { "type": "string", "maxLength": 60 },
+        "mode": { "enum": ["light", "dark"] },
+        "tokens": {
+          "type": "object", "maxProperties": 200,
+          "propertyNames": { "pattern": "^--[a-z0-9-]{1,40}$" },
+          "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 200, "not": { "pattern": "[;{}<>\\\\]|url\\(|@import|expression|javascript:" } }
+        },
+        "css": { "type": "string", "pattern": "^[^/\\\\].*\\.css$" }
+      }
+    }
+  }
+}

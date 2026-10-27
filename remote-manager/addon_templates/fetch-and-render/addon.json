@@ -1,0 +1,23 @@
+{
+  "apiVersion": 2,
+  "id": "example.fetch",
+  "name": "Fetch and render",
+  "version": "0.1.0",
+  "description": "Reads JSON from one web site through WRM and shows it as a table while the window is open.",
+  "author": "",
+  "license": "MIT",
+  "capabilities": ["ui.panel", "store", "http"],
+  "ui": {
+    "panel": "panel.html",
+    "title": "Status",
+    "defaultSize": { "w": 520, "h": 340 },
+    "minSize": { "w": 300, "h": 200 }
+  },
+  "store": { "quotaKb": 16 },
+  "http": {
+    "origins": ["https://status.example.com"],
+    "paths": ["/api/*"],
+    "methods": ["GET"],
+    "secrets": ["api_token"]
+  }
+}

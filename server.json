@@ -1,0 +1,32 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.vedranius/wrm-pro",
+  "title": "WRM PRO",
+  "description": "Your self-hosted WRM PRO: logs, files, services and commands with approvals and audit.",
+  "websiteUrl": "https://github.com/vedranius/web-browser-RDM-public#ai-desktop-apps-mcp",
+  "repository": {
+    "url": "https://github.com/vedranius/web-browser-RDM-public",
+    "source": "github"
+  },
+  "version": "14.0.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://{wrm_host}/mcp",
+      "variables": {
+        "wrm_host": {
+          "description": "Host name (and port) of your WRM PRO, for example wrm.example.com or wrm.example.com:8443",
+          "isRequired": true
+        }
+      },
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer followed by a token of an AI connection (wrm_pat_…) from WRM → Settings → AI connections",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

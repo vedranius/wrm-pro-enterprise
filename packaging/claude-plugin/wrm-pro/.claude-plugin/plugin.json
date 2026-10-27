@@ -1,0 +1,26 @@
+{
+  "name": "wrm-pro",
+  "displayName": "WRM PRO",
+  "version": "1.2.1",
+  "description": "Work on your servers through WRM PRO: logs, files, services and commands under WRM's permissions, approvals and audit. No settings: type /wrm-pro:wrm, give the WRM address and approve the sign-in in the browser.",
+  "author": {
+    "name": "vedranius",
+    "url": "https://github.com/vedranius"
+  },
+  "homepage": "https://github.com/vedranius/wrm-pro-enterprise#ai-desktop-apps-mcp",
+  "repository": "https://github.com/vedranius/wrm-pro-enterprise",
+  "license": "Apache-2.0",
+  "privacyPolicyUrl": "https://github.com/vedranius/wrm-pro-enterprise/blob/main/packaging/claude-plugin/wrm-pro/README.md#privacy",
+  "icon": "./assets/icon.png",
+  "keywords": [
+    "wrm",
+    "ssh",
+    "servers",
+    "devops",
+    "sysadmin",
+    "logs",
+    "incident",
+    "linux"
+  ],
+  "mcpServers": "./server/wrm.mcpb"
+}

@@ -1,0 +1,54 @@
+name: Claude security review
+
+# Claude reviews the changes of a pull request for security problems and comments on it
+# (https://github.com/anthropics/claude-code-security-review). WRM-specific guidance:
+# .github/security/claude-review-instructions.txt.
+#
+# Setup (once, by the repository owner): add the repository secret ANTHROPIC_API_KEY
+# (Settings → Secrets and variables → Actions) and set a monthly spend limit for that key in
+# the Anthropic Console. Without the secret the job is skipped. Usage is billed per token to
+# that key.
+#
+# The action is not hardened against prompt injection, so it reviews only pull requests from
+# branches of this repository, never from forks.
+
+on:
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: claude-security-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Claude security review
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: API key configured?
+        id: key
+        env:
+          KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$KEY" ]; then echo "present=1" >> "$GITHUB_OUTPUT"; else echo "::notice::ANTHROPIC_API_KEY is not set; Claude security review skipped."; fi
+      - if: steps.key.outputs.present == '1'
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2
+      - if: steps.key.outputs.present == '1'
+        uses: anthropics/claude-code-security-review@0c6a49f1fa56a1d472575da86a94dbc1edb78eda # main, 2026-10
+        with:
+          claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          comment-pr: true
+          exclude-directories: remote-manager/static/vendor
+          custom-security-scan-instructions: .github/security/claude-review-instructions.txt
+          false-positive-filtering-instructions: .github/security/claude-review-false-positives.txt

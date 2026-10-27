@@ -1,0 +1,23 @@
+{
+  "apiVersion": 2,
+  "id": "example.grafana",
+  "name": "Grafana overview",
+  "version": "0.1.0",
+  "description": "Health and firing alerts of one Grafana, read through WRM with a service account token.",
+  "author": "",
+  "license": "MIT",
+  "capabilities": ["ui.panel", "store", "notify", "http"],
+  "ui": {
+    "panel": "panel.html",
+    "title": "Grafana",
+    "defaultSize": { "w": 560, "h": 380 },
+    "minSize": { "w": 320, "h": 220 }
+  },
+  "store": { "quotaKb": 16 },
+  "http": {
+    "origins": ["https://grafana.example.com"],
+    "paths": ["/api/health", "/api/alertmanager/grafana/api/v2/alerts"],
+    "methods": ["GET"],
+    "secrets": ["grafana_token"]
+  }
+}

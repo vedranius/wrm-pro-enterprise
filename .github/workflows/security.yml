@@ -1,0 +1,190 @@
+name: Security checks
+
+# Continuous security checks (see SECURITY.md → "Continuous security checks"). Every push and
+# pull request runs them; the weekly run also scans the whole Git history for secrets and
+# catches newly published vulnerabilities in code that did not change.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Known vulnerabilities in Go, the standard library and the modules, limited to code WRM
+  # actually calls. Fails when one is reachable.
+  govulncheck:
+    name: govulncheck
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: remote-manager/go.mod
+          cache: false
+      - name: govulncheck
+        working-directory: remote-manager
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+          "$(go env GOPATH)/bin/govulncheck" -show verbose ./...
+
+  # Static analysis: staticcheck (bugs) and gosec (security patterns). gosec fails only on
+  # findings that are not in the reviewed baseline (.github/security/gosec-baseline.json).
+  static-analysis:
+    name: staticcheck & gosec
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: remote-manager/go.mod
+          cache: false
+      - name: staticcheck
+        working-directory: remote-manager
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@v0.8.2
+          "$(go env GOPATH)/bin/staticcheck" ./...
+      # gosec v2.29 cannot read the export data of Go 1.27 and would then silently skip its
+      # taint analysis, so it runs with Go 1.26 (allowed by go.mod's "go 1.26.0").
+      # The exact release is pinned: the taint results differ between patch releases, and the
+      # baseline is made with this one (GOTOOLCHAIN=go1.26.9).
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: '1.26.9'
+          cache: false
+      - name: gosec (new findings only)
+        working-directory: remote-manager
+        env:
+          GOTOOLCHAIN: local
+        run: |
+          go version
+          go install github.com/securego/gosec/v2/cmd/gosec@v2.29.0
+          "$(go env GOPATH)/bin/gosec" -quiet -fmt json -out gosec.json -exclude=G104 ./... || true
+          node ../tools/gosec-baseline.js gosec.json
+
+  # Secrets (tokens, private keys) in commits: the commits of a push or pull request, and the
+  # whole history on the weekly run. Configuration: .gitleaks.toml.
+  secrets:
+    name: gitleaks
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: remote-manager/go.mod
+          cache: false
+      - name: gitleaks
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          go install github.com/zricethezav/gitleaks/v8@v8.30.1
+          GITLEAKS="$(go env GOPATH)/bin/gitleaks"
+          case "$EVENT" in
+            pull_request) RANGE="${BASE_SHA}..HEAD" ;;
+            push) if [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ] && git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null; then RANGE="${BEFORE_SHA}..HEAD"; else RANGE=""; fi ;;
+            *) RANGE="" ;;
+          esac
+          echo "Scanning: ${RANGE:-whole history}"
+          if [ -n "$RANGE" ]; then
+            "$GITLEAKS" git --no-banner --redact --config .gitleaks.toml --log-opts="$RANGE" .
+          else
+            "$GITLEAKS" git --no-banner --redact --config .gitleaks.toml .
+          fi
+
+  # The workflows themselves: syntax (actionlint) and security (zizmor: unpinned actions,
+  # injection through PR titles or branch names, broad permissions, credential persistence).
+  workflows:
+    name: actionlint & zizmor
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: remote-manager/go.mod
+          cache: false
+      - name: actionlint
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          "$(go env GOPATH)/bin/actionlint" -color
+      - name: zizmor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 -m pip install --user --quiet zizmor==1.31.1
+          "$(python3 -m site --user-base)/bin/zizmor" --min-severity=low .github/workflows
+
+  # A pull request must not add a dependency with a known vulnerability.
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      # The review needs the repository's dependency graph (Settings → Advanced Security →
+      # Dependency graph). Until the owner turns it on, the job says so and passes.
+      - name: Dependency graph enabled?
+        id: graph
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if out=$(gh api "repos/${REPO}/dependency-graph/compare/${BASE_SHA}...${HEAD_SHA}" 2>&1); then
+            echo "enabled=1" >> "$GITHUB_OUTPUT"
+          # with the graph off the API answers 403 Forbidden (or names the dependency graph)
+          elif grep -qiE "dependency graph|HTTP 403" <<<"$out"; then
+            echo "::warning::Dependency review skipped: the dependency graph is not enabled for this repository (Settings → Advanced Security → Dependency graph). API answer: $out"
+          else
+            echo "$out"; exit 1
+          fi
+      - if: steps.graph.outputs.enabled == '1'
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        with:
+          fail-on-severity: moderate
+
+  # Licence gate (docs/LICENSING.md): every project source file must carry the Apache-2.0
+  # SPDX identifier, and no strong-copyleft (GPL/AGPL) Go module may enter the build.
+  licenses:
+    name: SPDX & licence gate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: SPDX headers
+        run: bash tools/check-spdx.sh
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: remote-manager/go.mod
+          cache: false
+      - name: Go module licences (no GPL/AGPL)
+        working-directory: remote-manager
+        run: |
+          go install github.com/google/go-licenses@latest
+          "$(go env GOPATH)/bin/go-licenses" check --disallowed_types=restricted ./...

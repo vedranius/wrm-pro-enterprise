@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Web Remote Manager PRO service, written by -install-service. Settings: /Users/demo/wrm/wrm.env -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>local.wrm</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/demo/wrm/wrm-pro-v11.7.0-darwin-arm64</string>
+		<string>-service=launchd</string>
+		<string>-env-file</string>
+		<string>/Users/demo/wrm/wrm.env</string>
+		<string>-workdir</string>
+		<string>/Users/demo/wrm</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>/Users/demo/wrm</string>
+	<key>UserName</key>
+	<string>demo</string>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+	</dict>
+	<key>ThrottleInterval</key>
+	<integer>5</integer>
+	<key>Umask</key>
+	<integer>63</integer>
+	<key>StandardOutPath</key>
+	<string>/Users/demo/wrm/wrm-service.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/demo/wrm/wrm-service.log</string>
+</dict>
+</plist>

@@ -1,0 +1,56 @@
+name: MCP Registry
+
+# Publishes server.json (io.github.vedranius/wrm-pro) to the official MCP Registry. The
+# registry accepts the io.github.vedranius/ namespace from this repository's GitHub Actions
+# OIDC token, so no password or personal token is stored. build.yml starts this after a
+# release is published (job mcp-registry); it can also be run by hand for an existing tag.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag whose server.json is published (for example v13.12.0)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish to the MCP Registry
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write   # GitHub OIDC sign-in to the registry for the io.github.vedranius/ namespace
+    env:
+      TAG: ${{ inputs.tag }}
+      PUBLISHER_VERSION: v1.8.4
+      PUBLISHER_SHA256: 5dc2fd415369c73551259f31cd33e2aacc9e0d1021e7f08fef1492d93b781628
+    steps:
+      - name: Check the tag name
+        run: |
+          case "$TAG" in v[0-9]*.[0-9]*.[0-9]*) ;; *) echo "::error::Not a release tag: $TAG"; exit 1 ;; esac
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          persist-credentials: false
+      - name: server.json version matches the tag
+        run: |
+          v=$(jq -r .version server.json)
+          if [ "v$v" != "$TAG" ]; then
+            echo "::error::server.json has version $v, the tag is $TAG"
+            exit 1
+          fi
+      - name: Install mcp-publisher
+        run: |
+          set -euo pipefail
+          curl -fsSL -o publisher.tgz "https://github.com/modelcontextprotocol/registry/releases/download/${PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+          echo "${PUBLISHER_SHA256}  publisher.tgz" | sha256sum -c -
+          tar xzf publisher.tgz mcp-publisher
+      - name: Publish
+        run: |
+          set -euo pipefail
+          ./mcp-publisher validate
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish

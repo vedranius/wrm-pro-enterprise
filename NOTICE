@@ -1,0 +1,12 @@
+WRM (Web Remote Manager)
+Copyright 2026 vedranius and WRM contributors
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party components included in, or downloaded by, WRM keep their own
+licenses. The authoritative list for each release is the CycloneDX SBOM
+(sbom-vX.Y.Z.cdx.json) published with that release, together with the
+files under LICENSES/ in the source tree.
+
+Components that are installed at runtime, rather than distributed with WRM,
+are licensed directly by their authors; see docs/THIRD-PARTY.md.

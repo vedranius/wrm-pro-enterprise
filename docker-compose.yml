@@ -1,0 +1,49 @@
+# Web Remote Manager PRO — self-hosted with one command:
+#   docker compose up -d        then open https://<host>:8080 and create the administrator account
+#
+# Back up the volume "wrm-data" (database, recordings) and keep a separate copy of the
+# encryption key (/data/remote_manager.db.key, or your own ENCRYPTION_KEY_FILE secret).
+
+services:
+  wrm:
+    build:
+      context: .
+      args:
+        VERSION: v14.0.0
+    image: wrm-pro:v14.0.0
+    restart: unless-stopped
+    ports:
+      - "8080:8080"              # web UI (HTTPS with the self-signed certificate below)
+      - "3478:3478/tcp"          # TURN relay for voice calls
+      - "3478:3478/udp"
+      - "49160-49200:49160-49200/udp"   # TURN relay ports (must match WRM_TURN_RELAY_PORTS)
+    environment:
+      HTTPS_SELF_SIGNED: "1"     # remove when a TLS reverse proxy is in front (then set WRM_TRUST_PROXY: "1")
+      WRM_TURN_RELAY_PORTS: "49160-49200"
+      # Voice relay from a container needs the IPv4 address browsers reach this host at:
+      WRM_TURN_PUBLIC_IP: "${WRM_TURN_PUBLIC_IP:-}"
+      # Optional: your own encryption key as a Docker secret instead of the generated key file
+      # ENCRYPTION_KEY_FILE: /run/secrets/wrm_encryption_key
+    # Inside the container 127.0.0.1 is the container itself. A SOCKS / HTTP proxy that runs
+    # on the Docker host (e.g. "ssh -D 1080" or a local proxy) is reached as host.docker.internal.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - wrm-data:/data
+    # secrets: [wrm_encryption_key]
+
+  # Remote desktop (RDP / VNC / Telnet) proxy. It shares the network of the wrm service,
+  # so WRM reaches it at 127.0.0.1:4822 and it reaches WRM's jump-host tunnels on 127.0.0.1.
+  # Remove this service if you do not need remote desktops.
+  guacd:
+    image: guacamole/guacd:1.5.5
+    restart: unless-stopped
+    network_mode: "service:wrm"
+    depends_on: [wrm]
+
+volumes:
+  wrm-data:
+
+# secrets:
+#   wrm_encryption_key:
+#     file: ./wrm_encryption_key.txt   # 64 hex characters (openssl rand -hex 32)
