@@ -1993,6 +1993,21 @@ func apiConnectionsHandler(w http.ResponseWriter, r *http.Request) {
 // /api/connections/{id}/duplicate  POST
 // /api/connections/{id}/secret     POST (owner, re-authentication; connsecret.go)
 // /api/connections/{id}/name-from-hostname  POST
+// deleteConnectionRows removes the per-connection rows that are not covered by a
+// foreign key. The connection row itself is deleted by the caller after the owner check.
+func deleteConnectionRows(connID int) {
+	for _, q := range []string{
+		`DELETE FROM connection_tunnels WHERE conn_id=?`,
+		`DELETE FROM ssh_key_deployments WHERE conn_id=?`,
+		`DELETE FROM monitor_samples WHERE conn_id=?`,
+		`DELETE FROM monitor_profiles WHERE conn_id=?`,
+		`DELETE FROM log_settings WHERE conn_id=?`,
+		`DELETE FROM git_server_health WHERE conn_id=?`,
+	} {
+		db.Exec(q, connID)
+	}
+}
+
 func apiConnectionByIDHandler(w http.ResponseWriter, r *http.Request) {
 	userID, ok := requireAuth(w, r)
 	if !ok {
@@ -2154,8 +2169,7 @@ func apiConnectionByIDHandler(w http.ResponseWriter, r *http.Request) {
 	case action == "" && r.Method == http.MethodDelete:
 		killTerminals(func(t *termSession) bool { return t.ConnID == id }, "The connection was deleted")
 		tunnelMgr.stopConn(id, "the connection was deleted")
-		db.Exec("DELETE FROM connection_tunnels WHERE conn_id=?", id)
-		db.Exec("DELETE FROM ssh_key_deployments WHERE conn_id=?", id)
+		deleteConnectionRows(id)
 		deleteSnippetsForScope("connection", id)
 		deleteBookmarksForScope("connection", id)
 		db.Exec("UPDATE connections SET jump_conn_id=NULL WHERE jump_conn_id=? AND user_id=?", id, userID)
@@ -2236,8 +2250,7 @@ func apiConnectionsBulkHandler(w http.ResponseWriter, r *http.Request) {
 		killTerminals(func(t *termSession) bool { return ids[t.ConnID] }, "The connection was deleted")
 		for id := range ids {
 			tunnelMgr.stopConn(id, "the connection was deleted")
-			db.Exec("DELETE FROM connection_tunnels WHERE conn_id=?", id)
-			db.Exec("DELETE FROM ssh_key_deployments WHERE conn_id=?", id)
+			deleteConnectionRows(id)
 			deleteSnippetsForScope("connection", id)
 			deleteBookmarksForScope("connection", id)
 			db.Exec("UPDATE connections SET jump_conn_id=NULL WHERE jump_conn_id=? AND user_id=?", id, userID)
