@@ -67,19 +67,20 @@ type credential struct {
 	Incomplete     bool     `json:"rotation_incomplete"`
 	HasPassword    bool     `json:"has_password"`
 	UsedBy         int      `json:"used_by"`
+	DualControl    bool     `json:"dual_control"`
 	CreatedAt      string   `json:"created_at"`
 	UpdatedAt      string   `json:"updated_at"`
 	password       string   // encrypted
 	pending        string   // encrypted; new password of an incomplete rotation
 }
 
-const credentialCols = `id,owner_id,name,username,password,key_id,description,hosts,shared_all,rotate_days,rotated_at,pending_password,rotation_status,created_at,updated_at`
+const credentialCols = `id,owner_id,name,username,password,key_id,description,hosts,shared_all,rotate_days,rotated_at,pending_password,rotation_status,dual_control,created_at,updated_at`
 
 func scanCredential(sc interface{ Scan(...interface{}) error }) (credential, error) {
 	var c credential
 	var shared int
 	err := sc.Scan(&c.ID, &c.OwnerID, &c.Name, &c.Username, &c.password, &c.KeyID, &c.Description, &c.Hosts, &shared, &c.RotateDays,
-		&c.RotatedAt, &c.pending, &c.RotationStatus, &c.CreatedAt, &c.UpdatedAt)
+		&c.RotatedAt, &c.pending, &c.RotationStatus, &c.DualControl, &c.CreatedAt, &c.UpdatedAt)
 	c.SharedAll = shared == 1
 	c.HasPassword = c.password != ""
 	c.Incomplete = c.pending != ""
@@ -887,8 +888,20 @@ func apiCredentialsHandler(w http.ResponseWriter, r *http.Request) {
 		if !requireStepUp(w, r, "credential_reveal") {
 			return
 		}
+		if cr.DualControl {
+			ck := approvedCheckout(cr.ID, userID)
+			if ck == 0 {
+				auditLog(r, userID, "credential.reveal_denied", cr.Name, map[string]interface{}{"cred_id": id, "reason": "no approved checkout"})
+				jsonError(w, "This credential needs a second approval. Request a checkout and have another user approve it first.", 403)
+				return
+			}
+			consumeCheckout(ck)
+			auditLog(r, userID, "credential.checkout_used", cr.Name, map[string]interface{}{"cred_id": id, "checkout_id": ck})
+		}
 		auditLog(r, userID, "credential.revealed", cr.Name, map[string]interface{}{"cred_id": id})
 		jsonOK(w, map[string]string{"password": decryptValue(cr.password), "pending_password": decryptValue(cr.pending)})
+	case action == "checkout" && r.Method == http.MethodPost:
+		requestCheckoutHandler(w, r, userID, cr)
 	case action == "rotate" && r.Method == http.MethodPost:
 		var in struct {
 			Mode        string `json:"mode"`
@@ -960,6 +973,7 @@ func saveCredential(w http.ResponseWriter, r *http.Request, userID int, cur *cre
 		SharedAll     bool   `json:"shared_all"`
 		Grants        []int  `json:"grants"`
 		RotateDays    int    `json:"rotate_days"`
+		DualControl   bool   `json:"dual_control"`
 	}
 	if json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&in) != nil {
 		jsonError(w, "Bad JSON", 400)
@@ -1034,9 +1048,9 @@ func saveCredential(w http.ResponseWriter, r *http.Request, userID int, cur *cre
 			jsonError(w, fmt.Sprintf("At most %d credentials per user", maxCredentialsPerUser), 400)
 			return
 		}
-		res, err := db.Exec(`INSERT INTO credentials (owner_id,name,username,password,key_id,description,hosts,shared_all,rotate_days,rotated_at,created_at,updated_at)
-			VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, userID, name, username, encryptValue(password), in.KeyID, truncateStr(in.Description, 2000), hosts,
-			boolInt(in.SharedAll), in.RotateDays, now, now, now)
+		res, err := db.Exec(`INSERT INTO credentials (owner_id,name,username,password,key_id,description,hosts,shared_all,rotate_days,dual_control,rotated_at,created_at,updated_at)
+			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`, userID, name, username, encryptValue(password), in.KeyID, truncateStr(in.Description, 2000), hosts,
+			boolInt(in.SharedAll), in.RotateDays, boolInt(in.DualControl), now, now, now)
 		if err != nil {
 			jsonError(w, err.Error(), 500)
 			return
@@ -1047,8 +1061,8 @@ func saveCredential(w http.ResponseWriter, r *http.Request, userID int, cur *cre
 			"hosts": hosts, "shared_all": in.SharedAll, "granted_to": len(grants)})
 	} else {
 		id = cur.ID
-		q := `UPDATE credentials SET name=?, username=?, password=?, key_id=?, description=?, hosts=?, shared_all=?, rotate_days=?, updated_at=?`
-		args := []interface{}{name, username, encryptValue(password), in.KeyID, truncateStr(in.Description, 2000), hosts, boolInt(in.SharedAll), in.RotateDays, now}
+		q := `UPDATE credentials SET name=?, username=?, password=?, key_id=?, description=?, hosts=?, shared_all=?, rotate_days=?, dual_control=?, updated_at=?`
+		args := []interface{}{name, username, encryptValue(password), in.KeyID, truncateStr(in.Description, 2000), hosts, boolInt(in.SharedAll), in.RotateDays, boolInt(in.DualControl), now}
 		if in.Password != "" {
 			// A password set by hand (e.g. changed on the servers outside WRM) ends an
 			// incomplete rotation, and counts as rotated when it is a new one.

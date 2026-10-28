@@ -386,6 +386,8 @@ func newRouter() http.Handler {
 	mux.HandleFunc("/api/keys", apiKeysHandler)
 	mux.HandleFunc("/api/keys/", apiKeysHandler)
 	mux.HandleFunc("/api/credentials", apiCredentialsHandler)
+	mux.HandleFunc("/api/credentials/checkouts", apiCheckoutsHandler)
+	mux.HandleFunc("/api/credentials/checkouts/", apiCheckoutsHandler)
 	mux.HandleFunc("/api/credentials/", apiCredentialsHandler)
 	mux.HandleFunc("/api/proxies", apiProxiesHandler)
 	mux.HandleFunc("/api/proxies/", apiProxiesHandler)
@@ -855,6 +857,7 @@ func initDB() {
 		is_admin INTEGER NOT NULL DEFAULT 0,
 		created_at TEXT NOT NULL)`)
 	migrateWebAuthn()
+	migrateCheckouts()
 	mustExec(`CREATE TABLE IF NOT EXISTS auth_sessions (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -1097,10 +1100,11 @@ func initDB() {
 		rotated_at TEXT NOT NULL DEFAULT '',
 		pending_password TEXT NOT NULL DEFAULT '',
 		rotation_status TEXT NOT NULL DEFAULT '',
+		dual_control INTEGER NOT NULL DEFAULT 0,
 		created_at TEXT NOT NULL DEFAULT '',
 		updated_at TEXT NOT NULL DEFAULT '')`,
 		"id", "owner_id", "name", "username", "password", "key_id", "description", "hosts", "shared_all", "rotate_days", "rotated_at",
-		"pending_password", "rotation_status", "created_at", "updated_at")
+		"pending_password", "rotation_status", "dual_control", "created_at", "updated_at")
 	ensureTable("credential_grants", `CREATE TABLE IF NOT EXISTS credential_grants (
 		credential_id INTEGER NOT NULL,
 		user_id INTEGER NOT NULL,
