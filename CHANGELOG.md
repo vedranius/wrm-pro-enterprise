@@ -1,3 +1,24 @@
+## [14.0.1] - 2026-10-28
+
+### Security
+
+- **2FA lockout.** A correct password no longer resets the per-IP counter before the second factor, and a wrong TOTP/recovery code counts against the account (`login_max_failures`, 15-minute lock).
+- **Password confirmations are rate-limited.** Password change, config export with secrets, credential reveal, key export, connection secrets and 2FA disable/recovery share the sign-in limiter and account lockout.
+- **Destructive AI commands cannot hide.** `sudo -u root …`/`doas …`, `rm -rf ../..` and `bash <<< '…'` are classified and refused like their direct forms.
+- **Bundle manifests are validated.** Absolute paths, `..`, dot/empty segments, backslashes and control characters in `bundle.json` or payload names refuse the import.
+- **Addon archives are bounded.** The sum of uncompressed entries is capped (64 MB) and an entry over 8 MB fails the install instead of being truncated; `%2e%2e` no longer bypasses `http.paths`; window/secrets/http are refused while the addon is disabled.
+- **MCP edits need a fresh confirmation** when step-up is on, and passkeys require user verification (biometric/PIN) at registration, sign-in and step-up.
+- **Host builds are administrator-only** and no longer inherit `ENCRYPTION_KEY`, `DB_PATH` or `WRM_*` variables.
+- **SAML dependency.** goxmldsig 1.6.0 fixes GO-2026-4753 (signature verification).
+
+### Fixed
+
+- **SQLite foreign keys on every connection** (`_pragma=foreign_keys(1)`) with a bounded pool; `ON DELETE CASCADE` now works.
+- **Automatic-mode budget survives a new session**, and persisting it no longer closes the session as a permission change.
+- **`ensureTable` keeps columns declared in the CREATE statement**, so addon instances are no longer set aside on every start; instances set aside by 13.9–13.14 are restored.
+- **Deleting a connection removes its monitoring samples, profile, log settings and server health.**
+- **Embedded UI:** gzip + ETag (304 on reload), deferred vendor scripts; failed deletes/revokes show the server error instead of success; toasts are a live region and the page language follows the chosen language.
+
 ## [14.0.0] - 2026-10-27
 
 ### Licence

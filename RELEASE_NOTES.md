@@ -1,3 +1,22 @@
+## Web Remote Manager PRO v14.0.1 — security and reliability fixes
+
+**The first patch release after v14.0.0.** It closes the highest-priority findings of an external review and the issues the review found in the automatic-mode and deployment paths.
+
+- **2FA and password confirmations** now lock the account after repeated wrong codes or passwords, instead of being guessable in a loop.
+- **Destructive AI commands** can no longer hide behind `sudo -u`, `..` or a here-string; automatic-mode budgets survive a new session.
+- **Bundle manifests and addon archives** are validated and bounded before they reach a server or the disk.
+- **SQLite foreign keys** are enforced on every pooled connection; `ensureTable` no longer sets addon instances aside on every start.
+- **Host builds** are administrator-only and no longer see WRM's encryption key.
+- **Faster UI:** gzip + ETag, deferred vendor scripts, and honest error messages when a delete fails.
+
+### Upgrade
+
+Replace the executable or container and keep the database and encryption key. No schema change is required; `mcp_tokens.auto_limits` already exists. Instances set aside by v13.9.0–v13.14.0 are restored on the first start.
+
+[Download v14.0.1](https://github.com/vedranius/wrm-pro-enterprise/releases/tag/v14.0.1) · [Full changelog](CHANGELOG.md)
+
+---
+
 ## WRM Pro Enterprise v14.0.0 — Apache License 2.0
 
 **WRM is now free software under the Apache License 2.0.** This release changes the project's licence and governance, and is the first release of the **WRM Pro Enterprise** distribution.
