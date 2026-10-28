@@ -4,6 +4,8 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"crypto/tls"
@@ -16,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net"
 	"net/http"
 	"os"
@@ -723,26 +726,90 @@ func serve(stop <-chan struct{}) int {
 	return 0
 }
 
-func serveIndex(w http.ResponseWriter) {
-	data, err := staticFiles.ReadFile("static/index.html")
+// serveIndex serves the single-page app with a validator and (when the browser accepts
+// it) gzip. The embedded file never changes at runtime, so the ETag can be cached.
+func serveIndex(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-cache")
+	serveEmbedded(w, r, "static/index.html")
+}
+
+var (
+	staticETags sync.Map // name -> ETag
+	staticGzip  sync.Map // name -> gzipped bytes
+)
+
+func staticETag(name string, data []byte) string {
+	if v, ok := staticETags.Load(name); ok {
+		return v.(string)
+	}
+	sum := sha256.Sum256(data)
+	et := `"` + hex.EncodeToString(sum[:12]) + `"`
+	staticETags.Store(name, et)
+	return et
+}
+
+func gzipStatic(name string, data []byte) []byte {
+	if v, ok := staticGzip.Load(name); ok {
+		return v.([]byte)
+	}
+	var b bytes.Buffer
+	zw := gzip.NewWriter(&b)
+	zw.Write(data)
+	zw.Close()
+	out := b.Bytes()
+	staticGzip.Store(name, out)
+	return out
+}
+
+func compressibleType(ct string) bool {
+	return strings.HasPrefix(ct, "text/") || strings.Contains(ct, "javascript") ||
+		strings.Contains(ct, "json") || strings.Contains(ct, "svg")
+}
+
+// serveEmbedded writes one embedded file with an ETag, a 304 path, gzip and an explicit
+// Content-Length. embed.FS files have no modification time, so without this every reload
+// transferred the whole 1.2 MB page again.
+func serveEmbedded(w http.ResponseWriter, r *http.Request, name string) {
+	data, err := staticFiles.ReadFile(name)
 	if err != nil {
-		http.Error(w, "Not found", 404)
+		http.NotFound(w, r)
 		return
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Write(data)
+	ct := mime.TypeByExtension(path.Ext(name))
+	if strings.HasSuffix(name, ".html") || ct == "" {
+		ct = "text/html; charset=utf-8"
+	}
+	h := w.Header()
+	h.Set("Content-Type", ct)
+	et := staticETag(name, data)
+	h.Set("ETag", et)
+	h.Set("Vary", "Accept-Encoding")
+	if inm := r.Header.Get("If-None-Match"); inm != "" && (inm == et || inm == "*") {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+	body := data
+	if compressibleType(ct) && strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+		body = gzipStatic(name, data)
+		h.Set("Content-Encoding", "gzip")
+	}
+	h.Set("Content-Length", strconv.Itoa(len(body)))
+	if r.Method == http.MethodHead {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	w.Write(body)
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/" || r.URL.Path == "" {
-		serveIndex(w)
+		serveIndex(w, r)
 		return
 	}
 	http.NotFound(w, r)
 }
 
-func sharePageHandler(w http.ResponseWriter, r *http.Request) { serveIndex(w) }
+func sharePageHandler(w http.ResponseWriter, r *http.Request) { serveIndex(w, r) }
 
 // versionHandler also names an available update (for the sign-in page's version badge).
 func versionHandler(w http.ResponseWriter, r *http.Request) {
