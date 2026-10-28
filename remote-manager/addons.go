@@ -465,7 +465,7 @@ func addonReadArchive(body []byte) (*addonManifest, string, error) {
 		}
 		total += f.UncompressedSize64
 		if total > addonMaxTotal {
-			return nil, "", fmt.Errorf("the addon is larger than %s uncompressed", formatMB(int64(addonMaxTotal)))
+			return nil, "", fmt.Errorf("the addon is larger than %d MB uncompressed", addonMaxTotal>>20)
 		}
 	}
 	// The manifest sits at the root, or one folder down (a ZIP made from a
