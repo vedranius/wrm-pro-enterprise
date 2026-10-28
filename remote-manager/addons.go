@@ -41,7 +41,7 @@ const (
 // addonMaxTotal caps the sum of all uncompressed entries. A ZIP with 500 files of
 // 8 MB each would otherwise write about 4 GB to <DB>.addons; the per-entry limit
 // alone is not a disk bound. It is a variable so tests can lower it.
-var addonMaxTotal int64 = 64 << 20
+var addonMaxTotal uint64 = 64 << 20
 
 var (
 	addonIDPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{1,63}$`)
@@ -464,8 +464,8 @@ func addonReadArchive(body []byte) (*addonManifest, string, error) {
 			return nil, "", fmt.Errorf("%s is larger than 8 MB", n)
 		}
 		total += f.UncompressedSize64
-		if total > uint64(addonMaxTotal) {
-			return nil, "", fmt.Errorf("the addon is larger than %s uncompressed", formatMB(addonMaxTotal))
+		if total > addonMaxTotal {
+			return nil, "", fmt.Errorf("the addon is larger than %s uncompressed", formatMB(int64(addonMaxTotal)))
 		}
 	}
 	// The manifest sits at the root, or one folder down (a ZIP made from a

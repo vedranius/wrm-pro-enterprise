@@ -74,7 +74,7 @@ type credential struct {
 	pending        string   // encrypted; new password of an incomplete rotation
 }
 
-const credentialCols = `id,owner_id,name,username,password,key_id,description,hosts,shared_all,rotate_days,rotated_at,pending_password,rotation_status,dual_control,created_at,updated_at`
+const credentialCols = `id,owner_id,name,username,password,key_id,description,hosts,shared_all,rotate_days,rotated_at,pending_password,rotation_status,dual_control,created_at,updated_at` // #nosec G101 -- column list, not a secret
 
 func scanCredential(sc interface{ Scan(...interface{}) error }) (credential, error) {
 	var c credential

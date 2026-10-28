@@ -46,14 +46,14 @@ func sendTelemetry(endpoint string) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body)) // #nosec G704 -- endpoint is set by an administrator
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "wrm-telemetry/"+AppVersion)
 	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) // #nosec G704 -- endpoint is set by an administrator
 	if err != nil {
 		return err
 	}
