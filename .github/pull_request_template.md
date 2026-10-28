@@ -9,6 +9,16 @@
 - [ ] Tested in the browser (terminal / file manager / sessions as relevant)
 - [ ] New UI text has `en` and `hr` translations
 
-## Contributor terms
+## Risk & security
 
-- [ ] I have read [CONTRIBUTING.md](../CONTRIBUTING.md) and agree to the contributor terms (my contribution is licensed under the project license, and the project owner may also license it commercially).
+<!-- For changes touching auth, crypto, sessions, the MCP layer, networking, tunnels, addons or
+     update, describe the security impact. Such changes require a security review, per
+     docs/rfcs/README.md. If none, write "None". -->
+
+## Contributor terms & AI disclosure
+
+- [ ] I have read [CONTRIBUTING.md](../CONTRIBUTING.md) and agree to the contributor terms: my
+      contribution is licensed under the [Apache License 2.0](../LICENSE), I have signed the
+      [CLA](../CLA.md), and this commit carries a `Signed-off-by` line.
+- [ ] If this PR is substantially AI-assisted, I state the tool(s) and model(s) used and what I
+      personally verified. See [docs/AI-CONTRIBUTIONS.md](../docs/AI-CONTRIBUTIONS.md).

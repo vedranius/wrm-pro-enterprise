@@ -38,6 +38,15 @@ Responsibilities:
 
 How to advance: sustained contribution plus review record, sponsorship by an existing maintainer, and approval by the steward.
 
+### Security maintainer
+
+A maintainer granted merge rights on the security-critical paths listed in `.github/CODEOWNERS`
+(auth, crypto, sessions, MCP, update, workflows).
+
+How to advance: appointment by the steward with two signatures (the steward and one existing
+security maintainer). Security-maintainer rights are the highest trust level short of the
+steward.
+
 ### Steward
 
 The final authority. Owns the trademark, the release signing key, and the copyright.
@@ -53,3 +62,10 @@ Responsibilities:
 | Name | GitHub | Role |
 |------|--------|------|
 | vedranius | [@vedranius](https://github.com/vedranius) | Steward |
+
+## Triage rotation
+
+Issues and security reports are triaged on a weekly rotation. Each week one maintainer is on
+call and answers new issues and reports within **5 business days** (see `docs/PSIRT.md` for the
+security response targets). Add maintainers here as they join; until then the steward is on
+call every week.
