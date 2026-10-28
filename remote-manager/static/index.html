@@ -7996,7 +7996,7 @@ async function duplicateConn(id) {
 
 async function deleteConn(id) {
   if (!(await uiConfirm(t('delete_conn_q'), {okText: t('delete'), danger: true}))) return;
-  await fetch('/api/connections/' + id, {method: 'DELETE'});
+  if (!(await apiOk('/api/connections/' + id, {method: 'DELETE'}))) return;
   showToast(t('connection_deleted'), 'success');
   loadData();
 }
@@ -8093,7 +8093,7 @@ async function delFolder(id) {
 
 async function bulkDelete() {
   if (!(await uiConfirm(`${t('delete')} ${selectedConns.size}?`, {okText: t('delete'), danger: true}))) return;
-  await fetch('/api/connections/bulk', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'delete', ids:[...selectedConns]})});
+  if (!(await apiOk('/api/connections/bulk', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'delete', ids:[...selectedConns]})}))) return;
   selectedConns.clear();
   showToast(t('connection_deleted'), 'success');
   loadData();
@@ -8404,7 +8404,7 @@ async function toggleSharePause(id, active) {
 
 async function deleteShare(id) {
   if (!(await uiConfirm(t('delete_share_q'), {okText: t('delete'), danger: true}))) return;
-  await fetch('/api/shares/' + id, {method: 'DELETE'});
+  if (!(await apiOk('/api/shares/' + id, {method: 'DELETE'}))) return;
   showToast(t('share_deleted'), 'success');
   openManageShares();
   loadData();
@@ -9917,7 +9917,7 @@ async function adminHosts() {
 
 async function adminDeleteHost(id) {
   if (!(await uiConfirm(t('forget_host_q'), {okText: t('forget'), danger: true}))) return;
-  await fetch('/api/admin/known-hosts/' + id, {method: 'DELETE'});
+  if (!(await apiOk('/api/admin/known-hosts/' + id, {method: 'DELETE'}))) return;
   adminHosts();
 }
 
@@ -10799,7 +10799,7 @@ async function quickConnect() {
 }
 
 async function removeQuick(id) {
-  await fetch('/api/connections/' + id, {method: 'DELETE'});
+  if (!(await apiOk('/api/connections/' + id, {method: 'DELETE'}))) return;
   loadData();
 }
 
@@ -14439,6 +14439,15 @@ async function apiError(res) {
   return (txt || res.statusText || ('HTTP ' + res.status)).trim();
 }
 
+// apiOk runs a state-changing request and reports the server's error. It returns the
+// response on success and null on failure, so callers never announce a change that did
+// not happen (a 403 or 404 used to show a green "deleted" toast).
+async function apiOk(url, opts) {
+  const res = await fetch(url, opts);
+  if (!res.ok) { showToast(await apiError(res), 'error'); return null; }
+  return res;
+}
+
 function fmHTML(id) {
   return `
   <div class="fm" id="fm-${id}">
@@ -17115,7 +17124,7 @@ async function renderSecurityPane() {
 }
 
 async function revokeSession(id) {
-  await fetch('/api/auth/sessions/' + id, {method: 'DELETE'});
+  if (!(await apiOk('/api/auth/sessions/' + id, {method: 'DELETE'}))) return;
   renderSecurityPane();
 }
 
