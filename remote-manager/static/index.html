@@ -1780,6 +1780,7 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
         <input type="text" id="auth-mfa-code" class="code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="11" placeholder="123456" onkeydown="if(event.key==='Enter') doMFA()">
       </div>
       <button class="auth-btn" onclick="doMFA()" data-i18n="verify">Verify</button>
+      <button class="auth-btn" id="auth-mfa-passkey" style="display:none;margin-top:8px;background:var(--surface2);color:var(--text);" onclick="webauthnLogin()" data-i18n="webauthn_use">Use a passkey / security key</button>
       <div style="text-align:center;margin-top:12px;"><a href="#" onclick="event.preventDefault();resetAuthSteps()" style="color:var(--text2);font-size:12px;" data-i18n="back">Back</a></div>
     </div>
   </div>
@@ -3006,6 +3007,7 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
     <div id="su-sso"></div>
     <div class="field" id="su-pw-wrap"><label data-i18n="password">Password</label><input type="password" id="su-password" autocomplete="current-password" onkeydown="if(event.key==='Enter'){event.preventDefault();stepUpSubmit();}"></div>
     <div class="field" id="su-code-wrap"><label data-i18n="su_code">2FA code (or a recovery code)</label><input type="text" id="su-code" inputmode="numeric" autocomplete="one-time-code" onkeydown="if(event.key==='Enter'){event.preventDefault();stepUpSubmit();}"></div>
+    <button class="btn-sec" id="su-passkey" style="display:none;width:100%;margin-bottom:8px;" onclick="stepUpWebAuthn()" data-i18n="webauthn_use">Use a passkey / security key</button>
     <div class="fm-error" id="su-error" style="display:none;"></div>
     <div class="modal-footer"><button class="btn-sec" onclick="stepUpDone(false)" data-i18n="cancel">Cancel</button><button id="su-submit" onclick="stepUpSubmit()" data-i18n="confirm">Confirm</button></div>
   </div>
@@ -3669,6 +3671,10 @@ Object.assign(LANGS.en, {
 "members": "Members",
 "members_lc": "members",
 "mfa_prompt": "Enter the 6-digit code from your authenticator app. You can also use one of your recovery codes.",
+"webauthn_use": "Use a passkey / security key", "webauthn_add": "Add passkey",
+"webauthn_failed": "Passkey verification failed. Check the authenticator and try again.", "webauthn_registered": "Passkey added",
+"webauthn_unsupported": "Passkeys need HTTPS (or localhost). This browser or address does not support them.",
+"passkeys": "Passkeys", "passkeys_desc": "Sign in with a hardware security key or platform passkey (FIDO2) instead of a 6-digit code.",
 "mic_busy": "The microphone is used by another application.",
 "mic_denied": "Microphone access was denied. Allow it in the browser (lock icon in the address bar) and try again.",
 "mic_needs_https": "Browsers allow the microphone only on HTTPS pages (or localhost). Ask the administrator to enable HTTPS (a certificate, a reverse proxy, or HTTPS_SELF_SIGNED=1).",
@@ -4185,6 +4191,10 @@ Object.assign(LANGS.hr, {
 "members": "Članovi",
 "members_lc": "članova",
 "mfa_prompt": "Upiši 6-znamenkasti kod iz aplikacije za autentifikaciju. Možeš koristiti i jedan od kodova za oporavak.",
+"webauthn_use": "Koristi passkey / sigurnosni ključ", "webauthn_add": "Dodaj passkey",
+"webauthn_failed": "Provjera passkeyja nije uspjela. Provjeri autentifikator i pokušaj ponovno.", "webauthn_registered": "Passkey dodan",
+"webauthn_unsupported": "Passkeyji trebaju HTTPS (ili localhost). Ovaj preglednik ili adresa ih ne podržava.",
+"passkeys": "Passkeyji", "passkeys_desc": "Prijava hardverskim sigurnosnim ključem ili platformskim passkeyjem (FIDO2) umjesto 6-znamenkastim kodom.",
 "mic_busy": "Mikrofon koristi druga aplikacija.",
 "mic_denied": "Pristup mikrofonu je odbijen. Dopusti ga u pregledniku (ikona lokota u adresnoj traci) i pokušaj ponovno.",
 "mic_needs_https": "Preglednici dopuštaju mikrofon samo na HTTPS stranicama (ili localhost). Zamoli administratora da uključi HTTPS (certifikat, reverse proxy ili HTTPS_SELF_SIGNED=1).",
@@ -6599,12 +6609,108 @@ function showLocalSignIn() {
   setTimeout(() => document.getElementById('auth-user').focus(), 30);
 }
 
-function showMFAStep(token) {
+function showMFAStep(token, webauthn) {
   mfaToken = token;
   document.getElementById('auth-step-cred').style.display = 'none';
   document.getElementById('auth-step-mfa').style.display = '';
   document.getElementById('auth-mfa-error').style.display = 'none';
+  document.getElementById('auth-mfa-passkey').style.display = webauthn ? '' : 'none';
   setTimeout(() => document.getElementById('auth-mfa-code').focus(), 50);
+}
+
+// ── WebAuthn / passkeys (FIDO2) ──
+function waB64ToBuf(b64) {
+  const s = b64.replace(/-/g, '+').replace(/_/g, '/');
+  const bin = atob(s + '='.repeat((4 - (s.length % 4)) % 4));
+  const u = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return u.buffer;
+}
+function waBufToB64(buf) {
+  const u = new Uint8Array(buf);
+  let bin = '';
+  for (let i = 0; i < u.length; i++) bin += String.fromCharCode(u[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function waCredentialJSON(cred) {
+  const r = cred.response;
+  const out = {id: cred.id, rawId: waBufToB64(cred.rawId), type: cred.type, response: {clientDataJSON: waBufToB64(r.clientDataJSON)}};
+  if (r.attestationObject) {
+    out.response.attestationObject = waBufToB64(r.attestationObject);
+    if (typeof r.getTransports === 'function') out.response.transports = r.getTransports();
+  } else {
+    out.response.authenticatorData = waBufToB64(r.authenticatorData);
+    out.response.signature = waBufToB64(r.signature);
+    if (r.userHandle) out.response.userHandle = waBufToB64(r.userHandle);
+  }
+  return out;
+}
+function waCreationOptions(o) {
+  const p = o.publicKey;
+  return {publicKey: {
+    rp: p.rp,
+    user: {id: waB64ToBuf(p.user.id), name: p.user.name, displayName: p.user.displayName},
+    challenge: waB64ToBuf(p.challenge),
+    pubKeyCredParams: p.pubKeyCredParams,
+    timeout: p.timeout,
+    excludeCredentials: (p.excludeCredentials || []).map(c => ({type: c.type, id: waB64ToBuf(c.id), transports: c.transports})),
+    authenticatorSelection: p.authenticatorSelection,
+    attestation: p.attestation,
+    hints: p.hints,
+  }};
+}
+function waAssertionOptions(o) {
+  const p = o.publicKey;
+  return {publicKey: {
+    challenge: waB64ToBuf(p.challenge),
+    timeout: p.timeout,
+    rpId: p.rpId,
+    allowCredentials: (p.allowCredentials || []).map(c => ({type: c.type, id: waB64ToBuf(c.id), transports: c.transports})),
+    userVerification: p.userVerification,
+  }};
+}
+function waUnsupported() {
+  return !(window.isSecureContext && navigator.credentials && navigator.credentials.get);
+}
+async function webauthnLogin() {
+  if (waUnsupported()) { authErr('auth-mfa-error', t('webauthn_unsupported')); return; }
+  try {
+    const r1 = await fetch('/api/auth/webauthn/login/begin', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({mfa_token: mfaToken})});
+    const d1 = await r1.json().catch(() => ({}));
+    if (!r1.ok) { authErr('auth-mfa-error', d1.error || t('auth_failed')); return; }
+    const cred = await navigator.credentials.get(waAssertionOptions(d1.options));
+    const r2 = await fetch('/api/auth/webauthn/login/complete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({mfa_token: mfaToken, webauthn_token: d1.webauthn_token, credential: waCredentialJSON(cred)})});
+    const d2 = await r2.json().catch(() => ({}));
+    if (!r2.ok) { authErr('auth-mfa-error', d2.error || t('auth_failed')); if (r2.status === 401 && /expired|password again/i.test(d2.error || '')) setTimeout(resetAuthSteps, 1500); return; }
+    document.getElementById('auth-pass').value = '';
+    onSignedIn(d2);
+  } catch (_) { authErr('auth-mfa-error', t('webauthn_failed')); }
+}
+async function stepUpWebAuthn() {
+  if (waUnsupported()) { const e = document.getElementById('su-error'); e.textContent = t('webauthn_unsupported'); e.style.display = ''; return; }
+  try {
+    const r1 = await fetch('/api/auth/step-up/webauthn/begin', {method: 'POST', headers: {'Content-Type': 'application/json'}});
+    const d1 = await r1.json().catch(() => ({}));
+    if (!r1.ok) { const e = document.getElementById('su-error'); e.textContent = d1.error || t('auth_failed'); e.style.display = ''; return; }
+    const cred = await navigator.credentials.get(waAssertionOptions(d1.options));
+    const r2 = await fetch('/api/auth/step-up/webauthn/complete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({password: document.getElementById('su-password').value, webauthn_token: d1.webauthn_token, credential: waCredentialJSON(cred), action: _stepUp.action})});
+    if (!r2.ok) { const e = document.getElementById('su-error'); e.textContent = await apiError(r2); e.style.display = ''; return; }
+    stepUpDone(true);
+  } catch (_) { const e = document.getElementById('su-error'); e.textContent = t('webauthn_failed'); e.style.display = ''; }
+}
+async function webauthnRegister() {
+  if (waUnsupported()) { showToast(t('webauthn_unsupported'), 'error', 6000); return; }
+  try {
+    const r1 = await fetch('/api/auth/webauthn/register/begin', {method: 'POST', headers: {'Content-Type': 'application/json'}});
+    const d1 = await r1.json().catch(() => ({}));
+    if (!r1.ok) { showToast(d1.error || t('failed'), 'error', 6000); return; }
+    const cred = await navigator.credentials.create(waCreationOptions(d1.options));
+    const r2 = await fetch('/api/auth/webauthn/register/complete', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({webauthn_token: d1.webauthn_token, name: '', credential: waCredentialJSON(cred)})});
+    const d2 = await r2.json().catch(() => ({}));
+    if (!r2.ok) { showToast(d2.error || t('failed'), 'error', 6000); return; }
+    showToast(t('webauthn_registered'), 'success', 2500);
+    renderSecurityPane();
+  } catch (_) { showToast(t('webauthn_failed'), 'error', 6000); }
 }
 
 async function loadAuthConfig() {
@@ -6698,7 +6804,7 @@ async function doAuth() {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) { authErr('auth-error', data.error || t('auth_failed')); return; }
-    if (data.mfa_required) { showMFAStep(data.mfa_token); return; }
+    if (data.mfa_required) { showMFAStep(data.mfa_token, data.webauthn); return; }
     document.getElementById('auth-pass').value = '';
     onSignedIn(data);
   } catch(e) {
@@ -8726,6 +8832,7 @@ window.wrmStepUp = function (info) {
     document.getElementById('su-code-wrap').style.display = info.totp && pw ? '' : 'none';
     document.getElementById('su-pw-wrap').style.display = pw ? '' : 'none';
     document.getElementById('su-submit').style.display = pw ? '' : 'none';
+    document.getElementById('su-passkey').style.display = (info.webauthn && pw) ? '' : 'none';
     document.getElementById('su-sso').innerHTML = sso.map(p => `<button class="btn-sec" style="width:100%;margin-bottom:8px;" onclick="stepUpSSO(${Number(p.id)})">🏢 ${esc(t('su_with_sso').replace('{p}', p.name))}</button>`).join('') +
       (sso.length && pw ? `<div class="auth-or">${esc(t('sso_or'))}</div>` : '');
     document.getElementById('su-password').value = '';
@@ -16986,6 +17093,11 @@ async function renderSecurityPane() {
       <div class="setting-control" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${me.totp_enabled
         ? `<button class="btn-sec btn-sm" onclick="regenRecoveryCodes()">${esc(t('new_recovery_codes'))}</button>${me.mfa_required ? '' : `<button class="btn-danger btn-sm" onclick="disable2FA()">${esc(t('turn_off'))}</button>`}`
         : `<button class="btn-sm" onclick="open2FASetup(false)">${esc(t('turn_on'))}</button>`}</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">
+      <div><div class="setting-label">${esc(t('passkeys'))} <span class="pill ${me.webauthn_count ? 'ok' : 'warn'}">${me.webauthn_count}</span></div>
+      <div class="setting-desc">${esc(t('passkeys_desc'))}</div></div>
+      <button class="btn-sec btn-sm" onclick="webauthnRegister()">${esc(t('webauthn_add'))}</button>
     </div>
     <div class="adm-h" id="my-sso-h" style="display:none;">${esc(t('sso_my_title'))}</div><div id="my-sso"></div>
     <div id="lock-settings"></div>

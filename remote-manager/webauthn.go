@@ -362,3 +362,99 @@ func apiAuthWebAuthnLoginComplete(w http.ResponseWriter, r *http.Request) {
 	recordLoginResult(ip, true)
 	finishLogin(w, r, u, "webauthn")
 }
+
+// POST /api/auth/step-up/webauthn/begin — start a WebAuthn assertion for step-up.
+func apiAuthStepUpWebAuthnBegin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		jsonError(w, "Method not allowed", 405)
+		return
+	}
+	s, err := lookupSession(r)
+	if err != nil || s.Restricted != "" {
+		jsonError(w, "Unauthorized", 401)
+		return
+	}
+	u, err := loadUser("id=?", s.UserID)
+	if err != nil || !userHasPasskey(u.ID) {
+		jsonError(w, "No passkey registered", 400)
+		return
+	}
+	wa, err := newWebAuthn(r)
+	if err != nil {
+		jsonError(w, "WebAuthn is not available at this address: "+err.Error(), 500)
+		return
+	}
+	assertion, session, err := wa.BeginLogin(newWebAuthnUser(u))
+	if err != nil {
+		jsonError(w, "WebAuthn step-up failed to start: "+err.Error(), 500)
+		return
+	}
+	jsonOK(w, map[string]interface{}{"options": assertion.Response, "webauthn_token": webauthnStoreSession(*session)})
+}
+
+// POST /api/auth/step-up/webauthn/complete {password, webauthn_token, credential, action}
+func apiAuthStepUpWebAuthnComplete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		jsonError(w, "Method not allowed", 405)
+		return
+	}
+	s, err := lookupSession(r)
+	if err != nil || s.Restricted != "" {
+		jsonError(w, "Unauthorized", 401)
+		return
+	}
+	ip := clientIP(r)
+	if blocked, wait := loginBlocked(ip); blocked {
+		jsonError(w, fmt.Sprintf("Too many failed attempts. Try again in %d s.", int(wait.Seconds())+1), 429)
+		return
+	}
+	var in struct {
+		Password      string          `json:"password"`
+		WebAuthnToken string          `json:"webauthn_token"`
+		Action        string          `json:"action"`
+		Credential    json.RawMessage `json:"credential"`
+	}
+	if json.NewDecoder(r.Body).Decode(&in) != nil {
+		jsonError(w, "Bad JSON", 400)
+		return
+	}
+	u, err := loadUser("id=?", s.UserID)
+	if err != nil {
+		jsonError(w, "Unauthorized", 401)
+		return
+	}
+	action := truncateStr(strings.TrimSpace(in.Action), 60)
+	fail := func(reason, msg string) {
+		recordLoginResult(ip, false)
+		auditLogAs(r, u.ID, u.Username, "auth.step_up_failed", action, map[string]string{"reason": reason})
+		jsonError(w, msg, 403)
+	}
+	if !userCheckPassword(u, in.Password) {
+		fail("wrong password", "Wrong password")
+		return
+	}
+	session, ok := webauthnTakeSession(in.WebAuthnToken)
+	if !ok {
+		jsonError(w, "The passkey step-up expired. Start again.", 400)
+		return
+	}
+	wa, err := newWebAuthn(r)
+	if err != nil {
+		jsonError(w, "WebAuthn is not available at this address: "+err.Error(), 500)
+		return
+	}
+	req := &http.Request{Body: io.NopCloser(bytes.NewReader(in.Credential))}
+	cred, err := wa.FinishLogin(newWebAuthnUser(u), session, req)
+	if err != nil {
+		fail("webauthn", "Passkey verification failed")
+		return
+	}
+	if err := updateWebAuthnCredential(u.ID, cred); err != nil {
+		jsonError(w, "Server error", 500)
+		return
+	}
+	recordLoginResult(ip, true)
+	db.Exec(`UPDATE auth_sessions SET step_up_at=? WHERE id=?`, nowRFC(), s.ID)
+	auditLogAs(r, u.ID, u.Username, "auth.step_up", action, map[string]string{"method": "password+webauthn"})
+	jsonOK(w, map[string]interface{}{"ok": true, "minutes": settingInt("step_up_minutes")})
+}

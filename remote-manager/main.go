@@ -337,6 +337,8 @@ func newRouter() http.Handler {
 	mux.HandleFunc("/api/admin/teams/", apiAdminTeamsHandler)
 	mux.HandleFunc("/api/teams", apiTeamsHandler)
 	mux.HandleFunc("/api/auth/step-up", apiAuthStepUpHandler)
+	mux.HandleFunc("/api/auth/step-up/webauthn/begin", apiAuthStepUpWebAuthnBegin)
+	mux.HandleFunc("/api/auth/step-up/webauthn/complete", apiAuthStepUpWebAuthnComplete)
 	mux.HandleFunc("/api/auth/oidc/start", apiOIDCStartHandler)
 	mux.HandleFunc("/api/admin/lockdown", apiAdminLockdownHandler)
 	mux.HandleFunc("/api/admin/siem", apiAdminSIEMHandler)

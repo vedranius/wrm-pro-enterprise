@@ -217,6 +217,7 @@ func requireStepUpAlways(w http.ResponseWriter, r *http.Request, action string) 
 		"error":   "Confirm with your password (and 2FA code) to continue",
 		"step_up": true, "action": action, "totp": userHasTOTP(s.UserID),
 		"password": userHasPassword(s.UserID), "sso": userSSOProviders(s.UserID),
+		"webauthn": userHasPasskey(s.UserID),
 	})
 	return false
 }

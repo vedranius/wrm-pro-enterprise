@@ -321,6 +321,7 @@ func mePayload(userID int, restricted string) map[string]interface{} {
 		"sso_only": userSSOOnly(u.ID), "sso": userSSOProviders(u.ID), "directory_password": userLDAPIdentity(u.ID) != nil,
 		"step_up":             map[string]interface{}{"required": settingBool("require_step_up"), "minutes": settingInt("step_up_minutes"), "totp": u.TOTPEnabled},
 		"recovery_codes_left": recoveryCodesLeft(u.Recovery),
+		"webauthn_count":      len(loadWebAuthnCredentials(u.ID)),
 		"password_min_length": settingInt("password_min_length"),
 		"screen_lock":         screenLockPolicy(u.ID),
 		"appearance":          map[string]interface{}{"default_theme": getSetting("appearance_default_theme"), "custom_css": settingBool("appearance_custom_css")},
