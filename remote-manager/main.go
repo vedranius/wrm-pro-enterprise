@@ -829,22 +829,29 @@ func resolveDBPath() string {
 func initDB() {
 	dbPath := resolveDBPath()
 	var err error
-	// busy_timeout must be set on every pooled connection (a PRAGMA run once only reaches
-	// one of them), otherwise concurrent writers can fail with "database is locked".
+	// PRAGMAs are per connection. A PRAGMA run once only reaches one pooled connection, so
+	// both busy_timeout and foreign_keys are part of the DSN; otherwise ON DELETE CASCADE
+	// and FK checks work only on whichever connection happened to run the statement.
 	dsn := dbPath
-	if !strings.ContainsAny(dbPath, "?#") {
-		dsn += "?_pragma=busy_timeout(10000)"
+	if !strings.ContainsAny(dbPath, "#") {
+		sep := "?"
+		if strings.Contains(dbPath, "?") {
+			sep = "&"
+		}
+		dsn = dbPath + sep + "_pragma=busy_timeout(10000)&_pragma=foreign_keys(1)"
 	}
 	db, err = sql.Open("sqlite", dsn)
 	if err != nil {
 		log.Fatalf("Open DB: %v", err)
 	}
+	// A small, bounded pool: SQLite allows one writer and any number of readers, and an
+	// unbounded pool under a burst only produces "database is locked" storms.
+	db.SetMaxOpenConns(8)
+	db.SetMaxIdleConns(8)
 	if err = db.Ping(); err != nil {
 		log.Fatalf("Ping DB: %v", err)
 	}
 	db.Exec(`PRAGMA journal_mode=WAL`)
-	db.Exec(`PRAGMA foreign_keys=ON`)
-	db.Exec(`PRAGMA busy_timeout=5000`)
 	// The database holds password hashes and encrypted secrets: keep it private.
 	for _, f := range []string{dbPath, dbPath + "-wal", dbPath + "-shm"} {
 		os.Chmod(f, 0o600)
