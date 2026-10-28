@@ -154,6 +154,9 @@ var settingSpecs = []settingSpec{
 	{Key: "update_proxy", Default: "", Kind: "string"},
 	{Key: "update_signing_keys", Default: "", Kind: "string"},
 	{Key: "self_update", Default: "admins", Kind: "enum", Enum: []string{"off", "admins"}},
+	// WebAuthn / passkeys: override the relying-party ID when the request host is not the
+	// public hostname (e.g. behind a reverse proxy or reached by IP).
+	{Key: "webauthn_rpid", Default: "", Kind: "string"},
 	{Key: "bitwarden", Default: "all", Kind: "enum", Enum: []string{"off", "admins", "all"}},
 	{Key: "bitwarden_idle_minutes", Default: "15", Kind: "int", Min: 1, Max: 240},
 	// AI assistant: who may use it, permission modes, providers, data handling, kill switch

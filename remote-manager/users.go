@@ -604,8 +604,9 @@ func apiAuthLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	recordLoginResult(ip, true)
-	if u.TOTPEnabled {
-		jsonOK(w, map[string]interface{}{"mfa_required": true, "mfa_token": newMFAToken(u.ID)})
+	hasPasskey := userHasPasskey(u.ID)
+	if u.TOTPEnabled || hasPasskey {
+		jsonOK(w, map[string]interface{}{"mfa_required": true, "mfa_token": newMFAToken(u.ID), "webauthn": hasPasskey})
 		return
 	}
 	finishLogin(w, r, u, "password")

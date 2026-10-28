@@ -286,6 +286,10 @@ func newRouter() http.Handler {
 	mux.HandleFunc("/api/auth/register", apiAuthRegisterHandler)
 	mux.HandleFunc("/api/auth/login", apiAuthLoginHandler)
 	mux.HandleFunc("/api/auth/mfa", apiAuthMFAHandler)
+	mux.HandleFunc("/api/auth/webauthn/register/begin", apiAuthWebAuthnRegisterBegin)
+	mux.HandleFunc("/api/auth/webauthn/register/complete", apiAuthWebAuthnRegisterComplete)
+	mux.HandleFunc("/api/auth/webauthn/login/begin", apiAuthWebAuthnLoginBegin)
+	mux.HandleFunc("/api/auth/webauthn/login/complete", apiAuthWebAuthnLoginComplete)
 	mux.HandleFunc("/api/auth/lock/verify", apiAuthLockVerifyHandler)
 	mux.HandleFunc("/api/auth/lock", apiAuthLockHandler)
 	mux.HandleFunc("/api/auth/lock/pin", apiAuthLockPinHandler)
@@ -829,6 +833,7 @@ func initDB() {
 		password_hash TEXT NOT NULL,
 		is_admin INTEGER NOT NULL DEFAULT 0,
 		created_at TEXT NOT NULL)`)
+	migrateWebAuthn()
 	mustExec(`CREATE TABLE IF NOT EXISTS auth_sessions (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
