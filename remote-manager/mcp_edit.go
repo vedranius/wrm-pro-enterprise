@@ -78,11 +78,20 @@ func joinMCPScopes(sc []string) string {
 }
 
 func mcpPolicySignature(g *mcpGrant) string {
+	type autoPolicy struct {
+		Allow, Deny, PathAllow, PathDeny []string
+		Minutes, MaxActions              int
+		UntilGrant                       bool
+	}
+	var ap *autoPolicy
+	if g.Auto != nil {
+		ap = &autoPolicy{g.Auto.Allow, g.Auto.Deny, g.Auto.PathAllow, g.Auto.PathDeny, g.Auto.Minutes, g.Auto.MaxActions, g.Auto.UntilGrant}
+	}
 	b, _ := json.Marshal(struct {
 		C []int
 		M string
 		S []string
-		A *aiAutoLimits
-	}{g.ConnIDs, g.Mode, g.Scopes, g.Auto})
+		A *autoPolicy
+	}{g.ConnIDs, g.Mode, g.Scopes, ap})
 	return sha256Hex(string(b))
 }
