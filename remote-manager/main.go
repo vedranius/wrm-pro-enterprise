@@ -798,6 +798,7 @@ func serveEmbedded(w http.ResponseWriter, r *http.Request, name string) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
+	// #nosec G705 -- the body is an embedded file from staticFiles, never request data
 	w.Write(body)
 }
 
