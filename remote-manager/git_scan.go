@@ -119,7 +119,7 @@ func discoverOn(cl *ssh.Client, cat *gitCatalog, apps []gitCatalogApp) ([]gitFou
 		sb.WriteString("fi\n")
 	}
 	sb.WriteString("echo WRM_DONE\n")
-	out, err := runRemoteScript(cl, sb.String(), "", gitScanTimeout)
+	out, err := runRemoteScriptLimit(cl, sb.String(), "", gitScanTimeout, 32<<20)
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +308,7 @@ END {emit()}' "$f"; done
 		sb.WriteString("fi\n")
 	}
 	sb.WriteString("echo WRM_DONE\n")
-	out, err := runRemoteScript(cl, sb.String(), "", gitScanTimeout)
+	out, err := runRemoteScriptLimit(cl, sb.String(), "", gitScanTimeout, 32<<20)
 	if err != nil {
 		return nil, err
 	}

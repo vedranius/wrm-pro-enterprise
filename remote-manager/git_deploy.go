@@ -43,7 +43,7 @@ const (
 
 var (
 	// first writable wins; {install} is the installation directory (a variable for tests)
-	gitUpdateLogPaths = []string{"/var/log/deploytool/updates.jsonl", "{install}/" + gitBackupDir + "/updates.jsonl", "/tmp/deploytool-updates.jsonl"}
+	gitUpdateLogPaths = []string{"/var/log/deploytool/updates.jsonl", "{install}/" + gitBackupDir + "/updates.jsonl"}
 	gitRestartSettle  = 2 * time.Second
 	// how restarts get root: as root nothing, else sudo -n when it is allowed (a variable for tests)
 	gitSudoPrelude = `if [ "$(id -u)" = 0 ]; then SU=; elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then SU="sudo -n"; else SU=; fi`
@@ -529,6 +529,7 @@ func (s *deploySession) appendUpdateLog(line string) (string, error) {
 	}
 	script := "L=" + shellQuote(line) + "\nfor f in " + strings.Join(paths, " ") + `; do
 d=${f%/*}
+[ -L "$f" ] && continue
 if { [ -f "$f" ] && [ -w "$f" ]; } || { [ ! -e "$f" ] && [ -d "$d" ] && [ -w "$d" ]; }; then
 if printf '%s\n' "$L" >> "$f" 2>/dev/null; then echo "J	$f"; exit 0; fi
 fi
