@@ -485,6 +485,7 @@ func main() {
 	lockdownMode := flag.String("lockdown", "", "`on`, off or status: turn the lockdown on or off (only break-glass administrators can sign in, AI stopped, shares paused) and exit; a running WRM applies it within seconds")
 	lockdownReason := flag.String("lockdown-reason", "", "with -lockdown on: the `REASON` shown to everyone")
 	backup := flag.String("backup", "", "write a consistent database backup to `FILE` (plus FILE.key when the key is a file) and exit")
+	backupWithoutKey := flag.Bool("backup-without-key", false, "with -backup: do not copy the encryption key next to the backup")
 	restore := flag.String("restore", "", "restore the database from the backup `FILE` and exit (run while WRM is stopped; restore the matching encryption key yourself)")
 	flag.StringVar(&initialSecurityLevel, "security-level", "", "`LEVEL` home, business or enterprise: the security level to start with while none was chosen yet (also with -install-service)")
 	addonLint := flag.String("addon-lint", "", "check the addon in `DIR` (or a .zip) as an install would, list what its sandbox refuses, and exit (status 1 on errors)")
@@ -579,7 +580,7 @@ func main() {
 		return
 	}
 	if *backup != "" {
-		if err := backupCLI(*backup); err != nil {
+		if err := backupCLI(*backup, !*backupWithoutKey); err != nil {
 			log.Fatal(err)
 		}
 		return

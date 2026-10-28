@@ -31,7 +31,7 @@ func backupDatabase(dest string) error {
 }
 
 // backupCLI backs up the database and, when the key is a file, its encryption key.
-func backupCLI(dest string) error {
+func backupCLI(dest string, withKey bool) error {
 	initDB()
 	if err := backupDatabase(dest); err != nil {
 		return err
