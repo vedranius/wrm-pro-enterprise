@@ -368,6 +368,9 @@ func finishLogin(w http.ResponseWriter, r *http.Request, u *userRow, method stri
 		jsonError(w, "Server error", 500)
 		return
 	}
+	// Only a completed sign-in clears the IP's failure counter. A correct password followed
+	// by a wrong second factor must not reset it.
+	recordLoginResult(clientIP(r), true)
 	db.Exec(`UPDATE users SET last_login_at=?, last_login_ip=?, failed_logins=0, locked_until='' WHERE id=?`,
 		time.Now().UTC().Format(time.RFC3339), clientIP(r), u.ID)
 	auditLogAs(r, u.ID, u.Username, "auth.login", "", map[string]string{"method": method, "user_agent": truncateStr(r.UserAgent(), 160)})
@@ -375,6 +378,20 @@ func finishLogin(w http.ResponseWriter, r *http.Request, u *userRow, method stri
 		breakGlassSignedIn(r, u)
 	}
 	jsonOK(w, mePayload(u.ID, restricted))
+}
+
+// noteSecondFactorFailure counts a wrong TOTP or recovery code against the account as well
+// as the IP, so a valid password plus an endless stream of guessed codes still locks the
+// account after login_max_failures attempts.
+func noteSecondFactorFailure(r *http.Request, u *userRow) {
+	fails := u.FailedLogins + 1
+	locked := ""
+	if max := settingInt("login_max_failures"); max > 0 && fails >= max {
+		locked = time.Now().Add(15 * time.Minute).UTC().Format(time.RFC3339)
+		fails = 0
+		auditLogAs(r, u.ID, u.Username, "auth.account_locked", "", map[string]string{"minutes": "15", "reason": "2fa"})
+	}
+	db.Exec(`UPDATE users SET failed_logins=?, locked_until=? WHERE id=?`, fails, locked, u.ID)
 }
 
 // passwordOrDirectoryConfirmed: the account's password, or for an account that signs in only
@@ -605,7 +622,6 @@ func apiAuthLoginHandler(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "This emergency (break-glass) account may only sign in from the networks the administrator allowed.", 403)
 		return
 	}
-	recordLoginResult(ip, true)
 	hasPasskey := userHasPasskey(u.ID)
 	if u.TOTPEnabled || hasPasskey {
 		jsonOK(w, map[string]interface{}{"mfa_required": true, "mfa_token": newMFAToken(u.ID), "webauthn": hasPasskey})
@@ -655,6 +671,10 @@ func apiAuthMFAHandler(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "Invalid sign-in", 401)
 		return
 	}
+	if t, ok := parseTS(u.LockedUntil); ok && time.Now().Before(t) {
+		jsonError(w, fmt.Sprintf("Account temporarily locked after repeated failed sign-ins. Try again in %d min or ask an administrator.", int(time.Until(t).Minutes())+1), 429)
+		return
+	}
 	code := strings.TrimSpace(payload.Code)
 	method := "totp"
 	if okCode, step := totpVerify(decryptValue(u.TOTPSecret), code, u.TOTPLastStep); okCode {
@@ -665,11 +685,11 @@ func apiAuthMFAHandler(w http.ResponseWriter, r *http.Request) {
 		auditLogAs(r, u.ID, u.Username, "auth.recovery_code_used", "", map[string]int{"left": recoveryCodesLeft(remaining)})
 	} else {
 		recordLoginResult(ip, false)
+		noteSecondFactorFailure(r, u)
 		auditLogAs(r, u.ID, u.Username, "auth.login_failed", "", map[string]string{"reason": "wrong 2FA code"})
 		jsonError(w, "Invalid verification code", 401)
 		return
 	}
-	recordLoginResult(ip, true)
 	if identityID := oidcMFAIdentity(nonce); identityID > 0 {
 		// The second step of a directory sign-in: the session belongs to that identity.
 		finishLogin(w, r, u, "oidc+"+method)
