@@ -745,6 +745,29 @@ func (s *aiSession) exec(ctx context.Context, cmd, stdin string, timeout time.Du
 }
 
 // gather collects the context the model starts with: OS, home directory, notes.
+// sanitizeServerInfo removes line breaks, control characters and angle brackets from text
+// the target server controls (os-release, kernel, login name) before it is placed in the
+// system prompt. Without this, root on the target could inject instructions through
+// PRETTY_NAME into the highest-trust channel.
+func sanitizeServerInfo(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r == '\n' || r == '\r' || r == '\t':
+			b.WriteByte(' ')
+		case r < 32 || r == 127:
+			// drop other control characters
+		case r == '<':
+			b.WriteByte('(')
+		case r == '>':
+			b.WriteByte(')')
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return truncateStr(strings.TrimSpace(b.String()), 300)
+}
+
 func (s *aiSession) gather(ctx context.Context) {
 	s.mu.Lock()
 	done := s.gathered
@@ -778,7 +801,7 @@ func (s *aiSession) gather(ctx context.Context) {
 		notes = truncateStr(redactText(notes), 4000)
 	}
 	s.mu.Lock()
-	s.osInfo = strings.Join(info, "; ")
+	s.osInfo = sanitizeServerInfo(strings.Join(info, "; "))
 	s.notes = notes
 	s.mu.Unlock()
 	s.audit(nil, "ai.context", map[string]interface{}{"os": s.osInfo, "notes_shared": s.ShareNotes && s.notes != ""})
