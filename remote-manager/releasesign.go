@@ -48,6 +48,7 @@ const (
 // builtinReleaseKeys are the public keys that sign this project's releases (newest first; an
 // old key stays listed while releases signed with it are still offered).
 var builtinReleaseKeys = []string{
+	"wrm-ed25519:NAGZJcuOV8AYTGabNniGgbo56b97hItuHK/Toe3Qyvs=", // project release key, 2026-10-28
 	"wrm-ed25519:dDQxQPC0rcL16tuoDJ35/XC9b0p73Vdy6XB4mcL3+/w=", // project release key, 2026-10-17
 }
 
