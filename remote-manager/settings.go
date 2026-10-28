@@ -163,6 +163,9 @@ var settingSpecs = []settingSpec{
 	// WebAuthn / passkeys: override the relying-party ID when the request host is not the
 	// public hostname (e.g. behind a reverse proxy or reached by IP).
 	{Key: "webauthn_rpid", Default: "", Kind: "string"},
+	// Opt-in anonymous telemetry (RFC 0007): off by default, non-identifying, GDPR-safe.
+	{Key: "telemetry", Default: "off", Kind: "enum", Enum: []string{"off", "basic"}},
+	{Key: "telemetry_endpoint", Default: "", Kind: "string"},
 	{Key: "bitwarden", Default: "all", Kind: "enum", Enum: []string{"off", "admins", "all"}},
 	{Key: "bitwarden_idle_minutes", Default: "15", Kind: "int", Min: 1, Max: 240},
 	// AI assistant: who may use it, permission modes, providers, data handling, kill switch

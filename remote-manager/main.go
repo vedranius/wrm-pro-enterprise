@@ -341,6 +341,7 @@ func newRouter() http.Handler {
 	mux.HandleFunc("/api/auth/step-up/webauthn/complete", apiAuthStepUpWebAuthnComplete)
 	mux.HandleFunc("/api/auth/oidc/start", apiOIDCStartHandler)
 	mux.HandleFunc("/api/admin/lockdown", apiAdminLockdownHandler)
+	mux.HandleFunc("/api/admin/backup", apiAdminBackupHandler)
 	mux.HandleFunc("/api/admin/siem", apiAdminSIEMHandler)
 	mux.HandleFunc("/api/admin/siem/", apiAdminSIEMHandler)
 	mux.HandleFunc("/api/admin/ldap", apiAdminLDAPHandler)
@@ -478,6 +479,8 @@ func main() {
 	releasePublicKey := flag.String("release-public-key", "", "with -release-verify: also trust this public `KEY` (wrm-ed25519:…)")
 	lockdownMode := flag.String("lockdown", "", "`on`, off or status: turn the lockdown on or off (only break-glass administrators can sign in, AI stopped, shares paused) and exit; a running WRM applies it within seconds")
 	lockdownReason := flag.String("lockdown-reason", "", "with -lockdown on: the `REASON` shown to everyone")
+	backup := flag.String("backup", "", "write a consistent database backup to `FILE` (plus FILE.key when the key is a file) and exit")
+	restore := flag.String("restore", "", "restore the database from the backup `FILE` and exit (run while WRM is stopped; restore the matching encryption key yourself)")
 	flag.StringVar(&initialSecurityLevel, "security-level", "", "`LEVEL` home, business or enterprise: the security level to start with while none was chosen yet (also with -install-service)")
 	addonLint := flag.String("addon-lint", "", "check the addon in `DIR` (or a .zip) as an install would, list what its sandbox refuses, and exit (status 1 on errors)")
 	addonLintJSON := flag.Bool("addon-lint-json", false, "with -addon-lint: print the report as JSON")
@@ -570,6 +573,18 @@ func main() {
 		}
 		return
 	}
+	if *backup != "" {
+		if err := backupCLI(*backup); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+	if *restore != "" {
+		if err := restoreCLI(*restore); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	if handled, code := runAsWindowsService(*svcName, serve); handled {
 		os.Exit(code)
 	}
@@ -605,6 +620,7 @@ func serve(stop <-chan struct{}) int {
 	go runMonitoring()
 	go statusMon.run()
 	go notifier.run()
+	go telemetryLoop()
 	go runCredentialReminders()
 	go runQuickCleanup()
 	go runGitMonitor()
