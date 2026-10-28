@@ -1621,6 +1621,12 @@ func ensureTable(name, create string, cols ...string) {
 	for _, c := range cols {
 		want[c] = true
 	}
+	// Columns the CREATE statement declares itself are never "unknown", even when the
+	// caller did not list them (otherwise a NOT NULL column without a default, such as
+	// addon_instances.addon_id, would set the table aside on every start).
+	for _, c := range createColumns(create) {
+		want[c] = true
+	}
 	have := map[string]bool{}
 	var missing, extra []string
 	for rows.Next() {
@@ -1668,6 +1674,48 @@ func ensureTable(name, create string, cols ...string) {
 	}
 	mustExec(create)
 	log.Printf("Upgraded table %s from an earlier version (%s); the old table was kept as %s", name, reason, old)
+}
+
+// createColumns returns the lower-cased column names a CREATE TABLE statement declares,
+// one column definition per comma-separated item; table constraints are skipped.
+func createColumns(create string) []string {
+	open, end := strings.Index(create, "("), strings.LastIndex(create, ")")
+	if open < 0 || end <= open {
+		return nil
+	}
+	var cols []string
+	depth, start := 0, open+1
+	body := create[:end]
+	for i := open + 1; i <= len(body); i++ {
+		if i < len(body) {
+			switch body[i] {
+			case '(':
+				depth++
+				continue
+			case ')':
+				depth--
+				continue
+			case ',':
+				if depth > 0 {
+					continue
+				}
+			default:
+				continue
+			}
+		}
+		fields := strings.Fields(body[start:i])
+		start = i + 1
+		if len(fields) == 0 {
+			continue
+		}
+		name := strings.ToLower(strings.Trim(fields[0], "\"`[]"))
+		switch name {
+		case "primary", "unique", "foreign", "check", "constraint":
+			continue
+		}
+		cols = append(cols, name)
+	}
+	return cols
 }
 
 func jsonError(w http.ResponseWriter, msg string, code int) {
