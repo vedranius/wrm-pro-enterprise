@@ -438,6 +438,7 @@ func apiAuthConfigHandler(w http.ResponseWriter, r *http.Request) {
 	// Directory sign-in buttons; local_login_limited hides the password form behind "Emergency sign-in".
 	out["sso"], out["local_login_limited"] = oidcSignInOptions(), localLoginLimited()
 	out["ldap"] = ldapSignInOptions()
+	out["saml"] = samlSignInOptions()
 	if st := lockdown(); st.On {
 		out["lockdown"] = map[string]string{"reason": st.Reason, "at": st.At}
 	}

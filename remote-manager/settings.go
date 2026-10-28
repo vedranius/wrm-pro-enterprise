@@ -59,6 +59,12 @@ var settingSpecs = []settingSpec{
 	{Key: "oidc_revalidate_minutes", Default: "60", Kind: "int", Min: 5, Max: 1440},
 	{Key: "oidc_unverified_hours", Default: "12", Kind: "int", Min: 1, Max: 720},
 	{Key: "ldap_sync_minutes", Default: "15", Kind: "int", Min: 5, Max: 1440},
+	// SAML 2.0 single sign-on (saml.go)
+	{Key: "saml_enabled", Default: "0", Kind: "bool"},
+	{Key: "saml_idp_metadata", Default: "", Kind: "string"}, // URL to fetch the IdP metadata, or inline XML
+	{Key: "saml_entity_id", Default: "", Kind: "string"},    // this SP's entity ID (empty → derive from the request)
+	{Key: "saml_attr_username", Default: "uid", Kind: "string"},
+	{Key: "saml_attr_groups", Default: "groups", Kind: "string"},
 	// Security alerts (alerts.go)
 	{Key: "alert_failed_signins", Default: "10", Kind: "int", Min: 0, Max: 1000},
 	{Key: "alert_failed_signins_minutes", Default: "10", Kind: "int", Min: 1, Max: 1440},
