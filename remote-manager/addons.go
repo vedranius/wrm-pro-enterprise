@@ -38,6 +38,11 @@ const (
 	addonMaxFile    = 8 << 20
 )
 
+// addonMaxTotal caps the sum of all uncompressed entries. A ZIP with 500 files of
+// 8 MB each would otherwise write about 4 GB to <DB>.addons; the per-entry limit
+// alone is not a disk bound. It is a variable so tests can lower it.
+var addonMaxTotal int64 = 64 << 20
+
 var (
 	addonIDPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{1,63}$`)
 	// addonCapabilities is the whole trusted surface of an addon. A capability
@@ -441,6 +446,7 @@ func addonReadArchive(body []byte) (*addonManifest, string, error) {
 		return nil, "", fmt.Errorf("an addon must contain 1-%d files", addonMaxFiles)
 	}
 	names := map[string]bool{}
+	var total uint64
 	for _, f := range zr.File {
 		n := strings.TrimSuffix(f.Name, "/")
 		if !addonSafeRel(n) {
@@ -456,6 +462,10 @@ func addonReadArchive(body []byte) (*addonManifest, string, error) {
 		}
 		if f.UncompressedSize64 > addonMaxFile {
 			return nil, "", fmt.Errorf("%s is larger than 8 MB", n)
+		}
+		total += f.UncompressedSize64
+		if total > uint64(addonMaxTotal) {
+			return nil, "", fmt.Errorf("the addon is larger than %s uncompressed", formatMB(addonMaxTotal))
 		}
 	}
 	// The manifest sits at the root, or one folder down (a ZIP made from a
@@ -551,6 +561,9 @@ func addonWriteFiles(body []byte, prefix, dst string) error {
 			continue
 		}
 		target := filepath.FromSlash(rel)
+		if f.UncompressedSize64 > addonMaxFile {
+			return fmt.Errorf("%s is larger than 8 MB", rel)
+		}
 		if dir := filepath.Dir(target); dir != "." {
 			if err := root.MkdirAll(dir, 0o755); err != nil {
 				return err
@@ -565,11 +578,14 @@ func addonWriteFiles(body []byte, prefix, dst string) error {
 			rc.Close()
 			return err
 		}
-		_, err = io.Copy(out, io.LimitReader(rc, addonMaxFile+1))
+		written, err := io.Copy(out, io.LimitReader(rc, addonMaxFile+1))
 		out.Close()
 		rc.Close()
 		if err != nil {
 			return err
+		}
+		if written > addonMaxFile {
+			return fmt.Errorf("%s is larger than 8 MB", rel)
 		}
 	}
 	return nil

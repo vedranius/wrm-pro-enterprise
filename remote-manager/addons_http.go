@@ -811,6 +811,17 @@ func addonOriginHostPort(origin string) string {
 	return strings.ToLower(net.JoinHostPort(u.Hostname(), port))
 }
 
+// addonPathHasDotDot catches traversal after percent-decoding (%2e%2e), which the
+// escaped path does not contain.
+func addonPathHasDotDot(p string) bool {
+	for _, seg := range strings.Split(p, "/") {
+		if seg == ".." || seg == "." {
+			return true
+		}
+	}
+	return false
+}
+
 // addonHTTPCheckURL validates one URL (the request or a redirect) against
 // the manifest and the approvals.
 func addonHTTPCheckURL(rec addonRecord, grants map[string]addonHTTPGrant, u *url.URL) (string, error) {
@@ -825,11 +836,15 @@ func addonHTTPCheckURL(rec addonRecord, grants map[string]addonHTTPGrant, u *url
 	if !listed {
 		return "", addonErrf("E_HTTP_ORIGIN", "%s is not in http.origins", origin)
 	}
-	path := u.EscapedPath()
-	if path == "" {
-		path = "/"
+	rawPath := u.EscapedPath()
+	if rawPath == "" {
+		rawPath = "/"
 	}
-	if strings.Contains(path, "..") || !addonPathAllowed(path, rec.HTTP.paths()) {
+	path, err := url.PathUnescape(rawPath)
+	if err != nil {
+		return "", addonErrf("E_HTTP_PATH", "The path %s is not valid", rawPath)
+	}
+	if addonPathHasDotDot(path) || !addonPathAllowed(path, rec.HTTP.paths()) {
 		return "", addonErrf("E_HTTP_PATH", "The path %s is not in http.paths", path)
 	}
 	g, ok := grants[origin]

@@ -752,6 +752,10 @@ func addonInstancesHandler(w http.ResponseWriter, r *http.Request, userID int, a
 		}
 		return
 	}
+	if !rec.Enabled && oneOf(rest[1], "window", "secrets", "http") {
+		addonFail(w, addonErrf("E_DISABLED", "The addon is disabled"), 409)
+		return
+	}
 	switch rest[1] {
 	case "window":
 		addonWindowSave(w, r, userID, in)
