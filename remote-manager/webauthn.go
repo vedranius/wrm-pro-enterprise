@@ -197,7 +197,7 @@ func apiAuthWebAuthnRegisterBegin(w http.ResponseWriter, r *http.Request) {
 	creation, session, err := wa.BeginRegistration(wu,
 		webauthn.WithAuthenticatorSelection(protocol.AuthenticatorSelection{
 			ResidentKey:      protocol.ResidentKeyRequirementPreferred,
-			UserVerification: protocol.VerificationPreferred,
+			UserVerification: protocol.VerificationRequired,
 		}),
 		webauthn.WithExclusions(webauthn.Credentials(wu.creds).CredentialDescriptors()),
 	)
@@ -287,7 +287,7 @@ func apiAuthWebAuthnLoginBegin(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "WebAuthn is not available at this address: "+err.Error(), 500)
 		return
 	}
-	assertion, session, err := wa.BeginLogin(newWebAuthnUser(u))
+	assertion, session, err := wa.BeginLogin(newWebAuthnUser(u), webauthn.WithUserVerification(protocol.VerificationRequired))
 	if err != nil {
 		jsonError(w, "WebAuthn sign-in failed to start: "+err.Error(), 500)
 		return
@@ -384,7 +384,7 @@ func apiAuthStepUpWebAuthnBegin(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "WebAuthn is not available at this address: "+err.Error(), 500)
 		return
 	}
-	assertion, session, err := wa.BeginLogin(newWebAuthnUser(u))
+	assertion, session, err := wa.BeginLogin(newWebAuthnUser(u), webauthn.WithUserVerification(protocol.VerificationRequired))
 	if err != nil {
 		jsonError(w, "WebAuthn step-up failed to start: "+err.Error(), 500)
 		return
