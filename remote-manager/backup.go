@@ -21,7 +21,7 @@ import (
 // SQLite's VACUUM INTO refuses to overwrite, so the path is quoted and any single quote
 // escaped (the destination is an operator-supplied path, never browser input).
 func backupDatabase(dest string) error {
-	if _, err := os.Stat(dest); err == nil {
+	if _, err := os.Stat(dest); err == nil { // #nosec G703 -- operator-supplied backup path
 		return fmt.Errorf("refusing to overwrite %s", dest)
 	}
 	if _, err := db.Exec(`VACUUM INTO '` + strings.ReplaceAll(dest, "'", "''") + `'`); err != nil {
@@ -38,11 +38,11 @@ func backupCLI(dest string, withKey bool) error {
 	}
 	keyPath := resolveDBPath() + ".key"
 	if _, err := os.Stat(keyPath); err == nil {
-		b, err := os.ReadFile(keyPath)
+		b, err := os.ReadFile(keyPath) // #nosec G304 -- WRM own key file
 		if err != nil {
 			return fmt.Errorf("backup written but key copy failed: %v", err)
 		}
-		if err := os.WriteFile(dest+".key", b, 0o600); err != nil {
+		if err := os.WriteFile(dest+".key", b, 0o600); err != nil { // #nosec G703 -- next to the operator-supplied backup
 			return fmt.Errorf("backup written but key copy failed: %v", err)
 		}
 		fmt.Printf("Backup written to %s (+ %s.key). Keep them in separate places.\n", dest, dest)
