@@ -21,7 +21,7 @@ require (
 )
 
 require (
-	github.com/beevik/etree v1.5.0 // indirect
+	github.com/beevik/etree v1.6.0 // indirect
 	github.com/dustin/go-humanize v1.1.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.4 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
@@ -30,8 +30,9 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/jonboulle/clockwork v0.2.2 // indirect
+	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/kr/fs v0.1.0 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/mattermost/xml-roundtrip-validator v0.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/ncruces/go-strftime v1.1.0 // indirect
@@ -42,7 +43,7 @@ require (
 	github.com/pion/transport/v4 v4.1.1 // indirect
 	github.com/pion/transport/v5 v5.1.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/russellhaering/goxmldsig v1.4.0 // indirect
+	github.com/russellhaering/goxmldsig v1.6.0 // indirect
 	github.com/tinylib/msgp v1.6.4 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
