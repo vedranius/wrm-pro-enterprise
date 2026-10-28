@@ -6,7 +6,9 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/url"
 	"runtime"
 	"strings"
 	"time"
@@ -39,21 +41,28 @@ func telemetryReport() map[string]interface{} {
 
 // sendTelemetry posts one report to the configured endpoint (empty = disabled).
 func sendTelemetry(endpoint string) error {
+	endpoint = strings.TrimSpace(endpoint)
 	if endpoint == "" {
 		return nil
+	}
+	// The collector is administrator-configured, but only a plain https origin is
+	// accepted: no credentials, no other scheme.
+	u, err := url.Parse(endpoint)
+	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil {
+		return fmt.Errorf("telemetry endpoint must be an https URL without credentials")
 	}
 	body, err := json.Marshal(telemetryReport())
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body)) // #nosec G704 -- endpoint is set by an administrator
+	req, err := http.NewRequest(http.MethodPost, u.String(), bytes.NewReader(body)) // #nosec G704 -- https endpoint set by an administrator
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "wrm-telemetry/"+AppVersion)
 	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req) // #nosec G704 -- endpoint is set by an administrator
+	resp, err := client.Do(req) // #nosec G704 -- https endpoint set by an administrator
 	if err != nil {
 		return err
 	}
@@ -65,7 +74,7 @@ func sendTelemetry(endpoint string) error {
 func telemetryLoop() {
 	for {
 		if getSetting("telemetry") == "basic" {
-			sendTelemetry(strings.TrimSpace(getSetting("telemetry_endpoint")))
+			sendTelemetry(getSetting("telemetry_endpoint"))
 		}
 		time.Sleep(24 * time.Hour)
 	}
