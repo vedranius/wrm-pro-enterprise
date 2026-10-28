@@ -24,6 +24,12 @@ func mcpEditGrant(w http.ResponseWriter, r *http.Request, id int64, userID int) 
 		jsonError(w, "Bad JSON", 400)
 		return
 	}
+	// An edit can widen the token (mode, scopes, connections, automatic limits) without
+	// changing the bearer string. It therefore needs the same fresh confirmation as the
+	// other access-changing actions.
+	if !requireStepUp(w, r, "ai_connection") {
+		return
+	}
 	if q.Auto != nil && g.Auto != nil {
 		if q.Auto.Deny == nil {
 			q.Auto.Deny = g.Auto.Deny
