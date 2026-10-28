@@ -134,6 +134,9 @@ func mdSetBuild(uid int, project, location string, connID int) (mdBuildSetting, 
 	case "", "none":
 		connID = 0
 	case "host":
+		if !isAdminUser(uid) {
+			return mdBuildSetting{}, errors.New("building on the WRM host is limited to administrators; choose a Linux build server or no build")
+		}
 		if ok, why := mdHostBuildSupported(); !ok {
 			return mdBuildSetting{}, errors.New(why)
 		}
@@ -188,6 +191,11 @@ func mdBuildProject(uid int, match mdSourceMatch, proj *mdProject, commit string
 	if strings.TrimSpace(*proj.Build) == "" {
 		return nil, fmt.Errorf("project %s has an empty build command; remove build from its deploy-config to deploy the commit without a build", proj.Name)
 	}
+	// A host build runs a shell command with the WRM account. That is an administrator
+	// action, not something an operator with git_medium should be able to request.
+	if setting.Location == "host" && !isAdminUser(uid) {
+		return nil, fmt.Errorf("building on the WRM host is limited to administrators; choose a Linux build server or no build")
+	}
 	switch setting.Location {
 	case "none":
 		tree, err := mdGitSourceTree(match, proj, commit)
@@ -214,6 +222,26 @@ func mdBuildProject(uid int, match mdSourceMatch, proj *mdProject, commit string
 		return mdBuildOnServer(uid, setting.ConnID, full, proj)
 	}
 	return nil, fmt.Errorf("unknown build location %q", setting.Location)
+}
+
+// mdBuildEnv is the WRM process environment without the secrets WRM itself needs
+// (encryption key, database path, WRM_* service settings). Proxy, locale and toolchain
+// variables a normal shell build expects stay.
+func mdBuildEnv() []string {
+	env := os.Environ()
+	out := make([]string, 0, len(env))
+	for _, kv := range env {
+		k, _, _ := strings.Cut(kv, "=")
+		switch k {
+		case "ENCRYPTION_KEY", "ENCRYPTION_KEY_FILE", "DB_PATH":
+			continue
+		}
+		if strings.HasPrefix(k, "WRM_") {
+			continue
+		}
+		out = append(out, kv)
+	}
+	return out
 }
 
 // mdBuildOnHost materialises the commit in a private temporary directory, runs the build
@@ -250,6 +278,7 @@ func mdBuildOnHost(full mdTree, proj *mdProject) (*mdBuildOutcome, error) {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "sh", "-c", *proj.Build)
 	cmd.Dir = work
+	cmd.Env = mdBuildEnv()
 	if err := mdApplyBuildUser(cmd, acc, work); err != nil {
 		out.Close()
 		return nil, err
