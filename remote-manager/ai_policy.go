@@ -415,13 +415,21 @@ func normalizeAutoLimits(a *aiAutoLimits) error {
 			return fmt.Errorf("path patterns must be absolute: %s", p)
 		}
 	}
-	a.Used = 0
+	// Continue a window that is still open instead of restarting it. A saved AI connection
+	// stores Used/Until in mcp_tokens.auto_limits; a fresh opt-in has no Until yet.
+	continuing := !a.Until.IsZero() && a.Until.After(time.Now()) && (a.UntilGrant || a.MaxActions > 0)
+	if !continuing {
+		a.Used = 0
+	}
 	if a.UntilGrant {
 		if !settingBool("ai_auto_until_grant") {
 			return fmt.Errorf("the policy does not allow automatic mode without a time limit")
 		}
 		// the caller sets Until to the AI connection's expiry
-		a.Minutes, a.MaxActions, a.Until = 0, 0, time.Time{}
+		a.Minutes, a.MaxActions = 0, 0
+		if !continuing {
+			a.Until = time.Time{}
+		}
 		return nil
 	}
 	maxMin := settingInt("ai_auto_max_minutes")
@@ -432,7 +440,9 @@ func normalizeAutoLimits(a *aiAutoLimits) error {
 	if a.MaxActions <= 0 || a.MaxActions > maxAct {
 		a.MaxActions = maxAct
 	}
-	a.Until = time.Now().Add(time.Duration(a.Minutes) * time.Minute)
+	if !continuing {
+		a.Until = time.Now().Add(time.Duration(a.Minutes) * time.Minute)
+	}
 	return nil
 }
 
