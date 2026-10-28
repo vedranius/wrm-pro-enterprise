@@ -46,3 +46,19 @@ documented rekey + recovery procedure.
 
 The interface and file provider are the near-term deliverable; the AWS/Azure/Vault providers
 and the rekey test need the respective external service.
+
+## Rekey and recovery procedure (documented, to be tested with a real provider)
+
+1. **Before any rekey**, write a full backup (`wrm -backup`) and verify it (`PRAGMA
+   integrity_check`). Keep the old key available until the rekey is confirmed.
+2. **Rekey** unwraps every row encrypted with the current data key and rewraps it with the new
+   one, in a single transaction (or resumable batches with a progress marker), then swaps the
+   active provider. A row that fails to unwrap stops the job; nothing is half-rekeyed.
+3. **Recovery** from a failed rekey = restore the backup + the matching key. The backup and its
+   key must be stored separately (see `docs/rfcs/0006-backup-restore.md`).
+4. **KMS provider**: the operator supplies the KMS key id/ARN via a secret; the data key is
+   wrapped by the KMS and never leaves it in plaintext. Losing the KMS key without a wrapped
+   backup means the vault cannot be recovered — this must be stated in the operator's runbook.
+
+Because the actual unwrap/rewrap needs a live KMS or HSM, this procedure is verified as part of
+the provider implementation, not in CI.
