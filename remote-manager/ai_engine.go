@@ -1008,6 +1008,7 @@ func (s *aiSession) CallTool(ctx context.Context, call aiToolCall) aiToolResult 
 				s.Auto.Used++
 			}
 			s.mu.Unlock()
+			s.persistAutoLimits()
 			s.mu.Lock()
 			used, maxAct := 0, 0
 			if s.Auto != nil {
@@ -1018,6 +1019,26 @@ func (s *aiSession) CallTool(ctx context.Context, call aiToolCall) aiToolResult 
 		}
 	}
 	return s.run(ctx, call, pl)
+}
+
+// persistAutoLimits writes the session's automatic-mode counters back to its AI
+// connection. Without this, closing and reopening a session reset Used to zero and the
+// granted action/time budget never ran out.
+func (s *aiSession) persistAutoLimits() {
+	if s.Transport != "mcp" || s.TokenID <= 0 {
+		return
+	}
+	s.mu.Lock()
+	a := s.Auto
+	var data []byte
+	if a != nil {
+		data, _ = json.Marshal(a)
+	}
+	s.mu.Unlock()
+	if a == nil {
+		return
+	}
+	db.Exec(`UPDATE mcp_tokens SET auto_limits=? WHERE id=?`, string(data), s.TokenID)
 }
 
 // run executes a planned action and returns the framed result.

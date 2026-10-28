@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -504,6 +505,7 @@ func initAddonV2Schema() {
 		created_by TEXT NOT NULL DEFAULT ''
 	)`)
 	mustExec(`CREATE INDEX IF NOT EXISTS idx_addon_instances_addon ON addon_instances(addon_owner, addon_id)`)
+	restoreAddonInstances()
 	ensureTable("addon_store", `CREATE TABLE IF NOT EXISTS addon_store (
 		instance_id INTEGER NOT NULL,
 		user_id INTEGER NOT NULL DEFAULT 0,
@@ -520,6 +522,45 @@ func initAddonV2Schema() {
 		PRIMARY KEY (user_id, instance_id)
 	)`)
 	initAddonHTTPSchema()
+}
+
+// restoreAddonInstances undoes the v13.9.0-v13.14.0 start-up bug that set addon_instances
+// aside as addon_instances_old_<time> on every start (addon_store and addon_windows kept
+// pointing at the old instance ids). When addon_instances is empty, the rows of the newest
+// non-empty copy are put back with their ids; the copies themselves are kept.
+func restoreAddonInstances() {
+	var n int
+	if db.QueryRow(`SELECT COUNT(*) FROM addon_instances`).Scan(&n) != nil || n > 0 {
+		return
+	}
+	rows, err := db.Query(`SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'addon\_instances\_old\_%' ESCAPE '\' ORDER BY name DESC`)
+	if err != nil {
+		return
+	}
+	var olds []string
+	for rows.Next() {
+		var t string
+		if rows.Scan(&t) == nil {
+			olds = append(olds, t)
+		}
+	}
+	rows.Close()
+	const cols = `id, addon_owner, addon_id, owner_id, name, created_at, created_by`
+	for _, t := range olds {
+		q := `"` + strings.ReplaceAll(t, `"`, `""`) + `"`
+		var c int
+		if db.QueryRow(`SELECT COUNT(*) FROM `+q).Scan(&c) != nil || c == 0 {
+			continue // empty, or not the layout this version knows
+		}
+		res, err := db.Exec(`INSERT INTO addon_instances (` + cols + `) SELECT ` + cols + ` FROM ` + q)
+		if err != nil {
+			log.Printf("Addon instances: restoring from %s failed: %v", t, err)
+			return
+		}
+		got, _ := res.RowsAffected()
+		log.Printf("Addon instances: restored %d instance(s) from %s (set aside by an earlier start)", got, t)
+		return
+	}
 }
 
 type addonInstance struct {
@@ -709,6 +750,10 @@ func addonInstancesHandler(w http.ResponseWriter, r *http.Request, userID int, a
 		default:
 			jsonError(w, "Method not allowed", 405)
 		}
+		return
+	}
+	if !rec.Enabled && oneOf(rest[1], "window", "secrets", "http") {
+		addonFail(w, addonErrf("E_DISABLED", "The addon is disabled"), 409)
 		return
 	}
 	switch rest[1] {

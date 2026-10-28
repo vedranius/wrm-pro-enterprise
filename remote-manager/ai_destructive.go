@@ -78,6 +78,19 @@ func isSystemTarget(t string) bool {
 		if t == "/" {
 			return true
 		}
+	} else {
+		// A relative target cannot be resolved without the remote working directory, but
+		// two or more ".." segments can climb above any normal home directory. Treat that
+		// as a system target instead of trusting the current directory.
+		ups := 0
+		for _, seg := range strings.Split(t, "/") {
+			if seg == ".." {
+				ups++
+			}
+		}
+		if ups >= 2 {
+			return true
+		}
 	}
 	return aiSystemDirs[t]
 }
@@ -119,13 +132,48 @@ func hasRecursive(args []string) bool {
 var aiPowerCommands = map[string]bool{"shutdown": true, "reboot": true, "poweroff": true, "halt": true, "kexec": true}
 
 // blockWords checks one command (its words, starting at the command name).
+// wrapperValueOpts are sudo/doas/runuser options whose value is the next word. Without
+// skipping the value, "sudo -u root rm -rf /" leaves "root" as the command name and the
+// destructive command behind it is never classified.
+var wrapperValueOpts = map[string]bool{
+	"-u": true, "--user": true, "-g": true, "--group": true, "-p": true, "--prompt": true,
+	"-C": true, "--close-from": true, "-U": true, "--other-user": true, "-r": true, "--role": true,
+	"-t": true, "--type": true, "-T": true, "--command-timeout": true, "-h": true, "--host": true,
+	"-D": true, "--chdir": true, "-R": true, "--chroot": true,
+}
+
+func skipWrapperArgs(args []string) []string {
+	for len(args) > 0 {
+		a := args[0]
+		if a == "--" {
+			return args[1:]
+		}
+		if !strings.HasPrefix(a, "-") {
+			return args
+		}
+		key := strings.SplitN(a, "=", 2)[0]
+		if wrapperValueOpts[key] && !strings.Contains(a, "=") {
+			if len(args) < 2 {
+				return nil
+			}
+			args = args[2:]
+			continue
+		}
+		args = args[1:]
+	}
+	return nil
+}
+
 func blockWords(words []string) *aiBlock {
 	// wrappers that run the rest of the line: env VAR=x, nohup, exec, command, setsid …
 	for len(words) > 0 {
 		w, _ := cmdName(words[0])
 		switch {
 		case strings.Contains(words[0], "=") && !strings.HasPrefix(words[0], "-"):
-		case oneOf(w, "env", "nohup", "exec", "command", "builtin", "setsid", "stdbuf", "unbuffer", "doas", "chroot", "eval"):
+		case oneOf(w, "sudo", "doas", "runuser"):
+			words = skipWrapperArgs(words[1:])
+			continue
+		case oneOf(w, "env", "nohup", "exec", "command", "builtin", "setsid", "stdbuf", "unbuffer", "chroot", "eval"):
 			if w == "chroot" && len(words) > 1 {
 				words = words[1:]
 			}
@@ -300,6 +348,7 @@ done:
 
 var (
 	reForkBomb   = regexp.MustCompile(`([A-Za-z_:.][A-Za-z0-9_:.]*)\(\)\{`)
+	reHereString = regexp.MustCompile(`(?s)<<<\s*(?:'([^']*)'|"([^"]*)"|(\S+))`)
 	rePipeShell  = regexp.MustCompile(`\|\s*(sudo\s+(-[A-Za-z-]+\s+)*)?(env\s+)?(/usr/bin/|/bin/|/usr/local/bin/)?(ba|z|da|k|c|tc|fi|a)?sh($|[\s;&|)])`)
 	rePipeInterp = regexp.MustCompile(`\|\s*(sudo\s+(-[A-Za-z-]+\s+)*)?(/usr/bin/|/bin/)?(python[0-9.]*|perl|ruby|node|php|lua)\s*(-\s*)?($|[;&|)])`)
 	reWriteDev   = regexp.MustCompile(`>\s*(/dev/(sd|hd|vd|xvd|nvme|mmcblk|disk/|mapper/|md|dm-|mem\b|kmem\b|port\b)|/etc/(shadow|gshadow|passwd|sudoers|group)\b|/proc/sysrq-trigger|/boot/)`)
@@ -337,7 +386,22 @@ func looseSegments(raw string) [][]string {
 }
 
 // aiDestructive returns why a command is blocked (nil when it is not destructive).
-func aiDestructive(cmd string) *aiBlock {
+func aiDestructive(cmd string) *aiBlock { return aiDestructiveDepth(cmd, 0) }
+
+func aiDestructiveDepth(cmd string, depth int) *aiBlock {
+	if depth > 3 {
+		return &aiBlock{Rule: "nested", Why: "nested shell input could not be checked safely"}
+	}
+	// A here-string can feed a command to a shell without any separator:
+	// bash <<< 'rm -rf /'. Check its content as a command line too.
+	for _, m := range reHereString.FindAllStringSubmatch(cmd, -1) {
+		inner := m[1] + m[2] + m[3]
+		if strings.TrimSpace(inner) != "" {
+			if b := aiDestructiveDepth(inner, depth+1); b != nil {
+				return b
+			}
+		}
+	}
 	if forkBomb(cmd) {
 		return &aiBlock{Rule: "fork_bomb", Why: "fork bomb"}
 	}

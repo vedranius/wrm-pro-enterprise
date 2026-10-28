@@ -74,7 +74,7 @@ type credential struct {
 	pending        string   // encrypted; new password of an incomplete rotation
 }
 
-const credentialCols = `id,owner_id,name,username,password,key_id,description,hosts,shared_all,rotate_days,rotated_at,pending_password,rotation_status,dual_control,created_at,updated_at`
+const credentialCols = `id,owner_id,name,username,password,key_id,description,hosts,shared_all,rotate_days,rotated_at,pending_password,rotation_status,dual_control,created_at,updated_at` // #nosec G101 -- column list, not a secret
 
 func scanCredential(sc interface{ Scan(...interface{}) error }) (credential, error) {
 	var c credential
@@ -876,7 +876,15 @@ func apiCredentialsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		json.NewDecoder(r.Body).Decode(&in)
 		u, err := loadUser("id=?", userID)
-		if err != nil || !userCheckPassword(u, in.Password) {
+		if err != nil {
+			jsonError(w, "Unauthorized", 401)
+			return
+		}
+		switch checkPasswordLimited(r, u, in.Password) {
+		case pwLocked:
+			jsonError(w, "Too many attempts. Try again later.", 429)
+			return
+		case pwWrong:
 			auditLog(r, userID, "credential.reveal_denied", cr.Name, map[string]interface{}{"cred_id": id, "reason": "wrong password"})
 			jsonError(w, "Wrong password", 403)
 			return

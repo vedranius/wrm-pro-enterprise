@@ -86,6 +86,21 @@ func safeBundlePath(name string) (string, string, bool) {
 	return name[:i], strings.Trim(name[i+1:], "/"), true
 }
 
+// validBundleRel reports whether a path from bundle.json may become a server path.
+// The manifest is written by another tool (or by an attacker) and its keys are used
+// verbatim for staging, backup and mv, so absolute paths, parent traversal, control
+// characters and non-canonical forms are refused at import.
+func validBundleRel(rel string) bool {
+	if rel == "" || strings.HasPrefix(rel, "/") || strings.ContainsAny(rel, "\x00\n\r\\") {
+		return false
+	}
+	if strings.Trim(rel, "/") != rel {
+		return false
+	}
+	_, err := cleanRelPath(rel)
+	return err == nil
+}
+
 type bundleImportResult struct {
 	Source   gitSource `json:"source"`
 	Files    int       `json:"files"`
@@ -156,6 +171,9 @@ func importBundle(userID int, r io.Reader) (*bundleImportResult, error) {
 			if !strings.Contains(p, "/") {
 				continue
 			}
+			if !validBundleRel(p) {
+				return nil, fmt.Errorf("unsafe payload path %q", p)
+			}
 			if h.Size > gitMaxBlobFetch {
 				return nil, fmt.Errorf("%s is too large", p)
 			}
@@ -176,10 +194,18 @@ func importBundle(userID int, r io.Reader) (*bundleImportResult, error) {
 	if len(manifest.Apps) == 0 {
 		return nil, fmt.Errorf("the bundle has no services")
 	}
+	if manifest.BundleID != "" && !gitNameRe.MatchString(manifest.BundleID) {
+		return nil, fmt.Errorf("invalid bundle id %q", manifest.BundleID)
+	}
 	out := &bundleImportResult{Warnings: []string{}}
 	for name, a := range manifest.Apps {
 		if !gitNameRe.MatchString(name) {
 			return nil, fmt.Errorf("invalid service name in the bundle: %q", name)
+		}
+		for rel := range a.Files {
+			if !validBundleRel(rel) {
+				return nil, fmt.Errorf("bundle %s: unsafe file path %q", name, rel)
+			}
 		}
 		for rel, f := range a.Files {
 			out.Files++
@@ -266,6 +292,9 @@ func bundleTarget(src gitSource, m *gitBundleManifest, name string) (gitTarget, 
 		t.Ref = "tag:" + a.Version
 	}
 	for rel, f := range a.Files {
+		if !validBundleRel(rel) {
+			continue // defence in depth for manifests stored before the import check
+		}
 		tf := gitTargetFile{Hash: f.Hash, Oldest: f.Oldest, History: f.History}
 		if len(tf.History) == 0 {
 			tf.History = []gitHistEntry{{Commit: a.Commit, CommitFull: a.Commit, Version: 0, Date: a.CommitDate, Hash: f.Hash}}

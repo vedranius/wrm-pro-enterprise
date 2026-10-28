@@ -414,7 +414,6 @@ func securityMiddleware(next http.Handler) http.Handler {
 
 // staticHandler serves the embedded UI assets without directory listings.
 func staticHandler() http.Handler {
-	fsrv := http.FileServer(http.FS(staticFiles))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/static/" || r.URL.Path == "/static/index.html" {
 			// Up to v9 the app was also reachable at /static/: keep bookmarks working.
@@ -429,14 +428,17 @@ func staticHandler() http.Handler {
 			http.NotFound(w, r)
 			return
 		}
-		if _, err := fs.Stat(staticFiles, strings.TrimPrefix(r.URL.Path, "/")); err != nil {
+		name := strings.TrimPrefix(r.URL.Path, "/")
+		if _, err := fs.Stat(staticFiles, name); err != nil {
 			http.NotFound(w, r)
 			return
 		}
 		if strings.HasPrefix(r.URL.Path, "/static/vendor/") {
 			w.Header().Set("Cache-Control", "public, max-age=604800, immutable")
+		} else {
+			w.Header().Set("Cache-Control", "no-cache")
 		}
-		fsrv.ServeHTTP(w, r)
+		serveEmbedded(w, r, name)
 	})
 }
 

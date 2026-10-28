@@ -21,28 +21,28 @@ import (
 // SQLite's VACUUM INTO refuses to overwrite, so the path is quoted and any single quote
 // escaped (the destination is an operator-supplied path, never browser input).
 func backupDatabase(dest string) error {
-	if _, err := os.Stat(dest); err == nil {
+	if _, err := os.Stat(dest); err == nil { // #nosec G703 -- operator-supplied backup path
 		return fmt.Errorf("refusing to overwrite %s", dest)
 	}
-	if _, err := db.Exec(`VACUUM INTO '` + strings.ReplaceAll(dest, "'", "''") + `'`); err != nil {
+	if _, err := db.Exec(`VACUUM INTO '` + strings.ReplaceAll(dest, "'", "''") + `'`); err != nil { // #nosec G701 -- operator-supplied path, single quotes escaped
 		return err
 	}
 	return nil
 }
 
 // backupCLI backs up the database and, when the key is a file, its encryption key.
-func backupCLI(dest string) error {
+func backupCLI(dest string, withKey bool) error {
 	initDB()
 	if err := backupDatabase(dest); err != nil {
 		return err
 	}
 	keyPath := resolveDBPath() + ".key"
 	if _, err := os.Stat(keyPath); err == nil {
-		b, err := os.ReadFile(keyPath)
+		b, err := os.ReadFile(keyPath) // #nosec G304 -- WRM own key file
 		if err != nil {
 			return fmt.Errorf("backup written but key copy failed: %v", err)
 		}
-		if err := os.WriteFile(dest+".key", b, 0o600); err != nil {
+		if err := os.WriteFile(dest+".key", b, 0o600); err != nil { // #nosec G703 -- next to the operator-supplied backup
 			return fmt.Errorf("backup written but key copy failed: %v", err)
 		}
 		fmt.Printf("Backup written to %s (+ %s.key). Keep them in separate places.\n", dest, dest)
@@ -55,7 +55,7 @@ func backupCLI(dest string) error {
 // restoreCLI restores the database from a validated backup. It runs before the server
 // starts, so the database is not open yet.
 func restoreCLI(src string) error {
-	if _, err := os.Stat(src); err != nil {
+	if _, err := os.Stat(src); err != nil { // #nosec G703 -- backup path from the operator
 		return fmt.Errorf("backup file not found: %s", src)
 	}
 	f, err := sql.Open("sqlite", src+"?_pragma=busy_timeout(10000)")
@@ -76,7 +76,7 @@ func restoreCLI(src string) error {
 		}
 		fmt.Printf("Current database kept as %s\n", old)
 	}
-	if err := os.Rename(src, dbPath); err != nil {
+	if err := os.Rename(src, dbPath); err != nil { // #nosec G703 -- backup path from the operator
 		return fmt.Errorf("could not place the restored database: %v", err)
 	}
 	fmt.Printf("Restored %s. Restore the matching encryption key before starting WRM.\n", dbPath)

@@ -250,7 +250,7 @@ func samlMetadataHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/samlmetadata+xml")
 	w.Header().Set("Cache-Control", "no-store")
-	w.Write(buf)
+	w.Write(buf) // #nosec G705 -- generated SAML metadata, not user input
 }
 
 // ─── HTTP: start sign-in ─────────────────────────────
@@ -305,7 +305,7 @@ func apiSAMLStartHandler(w http.ResponseWriter, r *http.Request) {
 		oauthPage(w, 500, "Server error", "Try again.")
 		return
 	}
-	http.Redirect(w, r, redirectURL.String(), http.StatusFound)
+	http.Redirect(w, r, redirectURL.String(), http.StatusFound) // #nosec G710 -- IdP URL from the administrator-configured metadata
 }
 
 // ─── HTTP: assertion consumer service ────────────────

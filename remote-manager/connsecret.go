@@ -119,13 +119,15 @@ func connectionSecretHandler(w http.ResponseWriter, r *http.Request, userID int,
 		return
 	}
 	if userHasPassword(u.ID) {
-		if !userCheckPassword(u, in.Password) {
-			recordLoginResult(ip, false)
+		switch checkPasswordLimited(r, u, in.Password) {
+		case pwLocked:
+			jsonError(w, "Too many attempts. Try again later.", 429)
+			return
+		case pwWrong:
 			auditLogRef(r, userID, u.Username, "connection.secret_denied", cur.Name, map[string]interface{}{"id": cur.ID, "reason": "wrong confirmation"}, auditRef{ConnID: cur.ID})
 			jsonError(w, "Wrong password", 403)
 			return
 		}
-		recordLoginResult(ip, true)
 	} else if !requireStepUpAlways(w, r, "connection_secret") {
 		// Directory-only accounts (OIDC) have no password in WRM: they confirm with their provider.
 		return
