@@ -2612,7 +2612,15 @@ func apiExportHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		json.NewDecoder(r.Body).Decode(&p)
 		u, err := loadUser("id=?", userID)
-		if err != nil || !checkPassword(u.Hash, p.Password) {
+		if err != nil {
+			jsonError(w, "Unauthorized", 401)
+			return
+		}
+		switch checkPasswordLimited(r, u, p.Password) {
+		case pwLocked:
+			jsonError(w, "Too many attempts. Try again later.", 429)
+			return
+		case pwWrong:
 			auditLog(r, userID, "config.export_denied", "", map[string]string{"reason": "wrong password"})
 			jsonError(w, "Wrong password", 403)
 			return
