@@ -1,3 +1,19 @@
+## [14.0.4] - 2026-10-29
+
+### Security
+
+- **The audit chain is keyed.** New entries are HMAC-SHA256 over the installation's encryption key (`h2:` prefix) instead of plain SHA-256, so a copied database cannot be rewritten with a recomputed chain. `verifyAuditChain` still accepts old entries.
+- **The session cookie is `__Host-wrm_session` over HTTPS** (Secure, Path=/, no Domain), so a sibling subdomain cannot set or overwrite it. Plain HTTP keeps `wrm_session`; sign-out clears both.
+- **`/api` and `/ws` are deny-by-default.** `authGate` refuses a request without a valid session unless the path is public (sign-in helpers, share tokens, hook secrets, SCIM, OAuth, MCP), so a handler that forgets `requireAuth` is no longer exposed.
+
+### Fixed
+
+- An empty connection list now shows a first-run card with English and Croatian copy instead of a hardcoded English line.
+
+### CI
+
+- A `windows-latest` job runs `go vet` and `go build`.
+
 ## [14.0.3] - 2026-10-29
 
 ### Security

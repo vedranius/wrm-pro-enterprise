@@ -16,9 +16,9 @@ Legenda statusa: `todo` · `wip` · `done` · `n/a` (samo enterprise / samo publ
 | SEC-03 | High | SSRF: Git source, NetBox, AI provider `base_url`, OIDC discovery | zajednički safe dialer (blokira loopback/RFC1918/link-local/ULA/metadata) + admin allowlist | test: `127.0.0.1`, `169.254.169.254`, `10.0.0.1` odbijeni; javni host prolazi | djelomično (metadata/link-local; privatni allowlist ostaje) | 40db674 | 98bcd11 |
 | SEC-04 | High | Loopback tuneli dostupni svim korisnicima; SOCKS bez autha | provjera vlasnika na svim loopback dialovima; SOCKS user/pass | test: drugi korisnik ne može na tuđi tunel | done | 77264c4 | 7a6bf1c |
 | SEC-05 | Medium | Globalni host-key TOFU | known_hosts po vlasniku; auto-trust traži vlasništvo | test: korisnik B ne može auto-trustati host korisnika A | done | cc8a0ee | 67d39c6 |
-| SEC-06 | Medium | Audit lanac bez HMAC-a; CLI stvara dvije grane | HMAC s ključem izvan DB-a; insert čita prethodni hash | test: izmijenjen zapis → verify fail; CLI insert ne lomi lanac | todo | — | — |
+| SEC-06 | Medium | Audit lanac bez HMAC-a; CLI stvara dvije grane | HMAC s ključem izvan DB-a; insert čita prethodni hash | test: izmijenjen zapis → verify fail; CLI insert ne lomi lanac | done | fb5afaa | ab241d3 |
 | SEC-07 | Medium | Gost identitet je klijentski kolačić; `allow_link_shares=off` proširuje na sve prijavljene | potpisani guest cookie + IP binding; zabranjeni link = 403, ne `users` | test: obrisan cookie ne vraća pristup; policy off → 403 | done | 4232668 | 7ad00fb |
-| SEC-08 | Low | CSP `unsafe-inline`; HSTS samo na TLS-u; cookie bez `__Host-` | nonce CSP, HSTS preko `isHTTPS`, `__Host-` + rotacija | test: headeri; CSP bez `unsafe-inline` | djelomično (HSTS; CSP/cookie ostaju) | 678c311 | 9a93e84 |
+| SEC-08 | Low | CSP `unsafe-inline`; HSTS samo na TLS-u; cookie bez `__Host-` | nonce CSP, HSTS preko `isHTTPS`, `__Host-` + rotacija | test: headeri; CSP bez `unsafe-inline` | djelomično (HSTS + __Host- kolačić; CSP nonce ostaje) | 3aa162b | 980a826 |
 | SEC-09 | Medium | MCP: DCR consent phishing, token upgrade bez step-upa, revoke bez autha | potvrda podrijetla + step-up za povećanje prava; revoke auth | test: upgrade bez step-upa → 403; tuđi revoke → 401 | done (step-up; DCR/revoke ostaje) | 36f6a5b | 671d118 |
 | SEC-10 | Medium | Addon ZIP bez ukupnog limita; `%2e%2e`; secrets rade kad je addon isključen | ukupni cap + fail umjesto truncate; dekodirati putanju; enabled gate iznad dispatcha | test: 500×8 MB odbijeno; `%2e%2e` odbijen; disabled → 409 | done | 9580643 | 1b4699d |
 
@@ -49,10 +49,10 @@ Legenda statusa: `todo` · `wip` · `done` · `n/a` (samo enterprise / samo publ
 | UX-01 | High | 19 `fetch()` bez `res.ok` → lažni uspjeh | `apiOk()` wrapper; delete/revoke/rename | test: 403 prikaže grešku, ne uspjeh | done | e7aa180 | d75ab8a |
 | UX-02 | High | 1,27 MB HTML bez gzipa/ETag; vendor JS blokira paint | gzip+ETag; `defer`; SW network-first (SW ostaje) | test: `Content-Encoding`, 304, defer | done | 6a881b3 | 4017ada |
 | UX-03 | High | a11y: 231 label bez `for`, 59 ikona bez imena, 0 `aria-live`, bez focus trapa | `for/id`, `aria-label`, `role=status`, modal helper | test: axe/lighthouse prag; ručna provjera | djelomično (aria-live + lang; labele/focus trap ostaju) | c28086d | 8851e01 |
-| UX-04 | Medium | onboarding/empty state, miješani jezik, "AI connections"/"Medium"/"Session" | copy + first-run kartica + EN/HR na auth | test: vizualna provjera | todo | — | — |
+| UX-04 | Medium | onboarding/empty state, miješani jezik, "AI connections"/"Medium"/"Session" | copy + first-run kartica + EN/HR na auth | test: vizualna provjera | done | 9628ea2 | 0ce6dc0 |
 | UX-05 | Medium | `esc` u inline handlerima; clipboard u localStorage; addon bridge | `jsq()`, TTL+filtar, frame prefix | test: ime s `'` ne izvršava JS | djelomično (clipboard TTL; jsq sweep ostaje) | 07144d2 | 9ed0105 |
-| QA-01 | Medium | Windows test suite ne prolazi; CI samo Ubuntu | GOOS skipovi + windows-latest job | CI zelen na oba OS-a | todo | — | — |
-| ARCH-01 | Medium | Nema deny-by-default autorizacije (150+ ruta) | middleware s allowlistom javnih ruta + test enumeracije | test: nova ruta bez auth pada test | todo | — | — |
+| QA-01 | Medium | Windows test suite ne prolazi; CI samo Ubuntu | GOOS skipovi + windows-latest job | CI zelen na oba OS-a | done | a9709f7 | 27fc325 |
+| ARCH-01 | Medium | Nema deny-by-default autorizacije (150+ ruta) | middleware s allowlistom javnih ruta + test enumeracije | test: nova ruta bez auth pada test | done | 2e431c5 | 0f9f81f |
 
 ## Enterprise-only
 
