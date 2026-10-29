@@ -248,7 +248,8 @@ func resolveShareAccessCtx(share ShareLink, ctx accessCtx) (*ShareAccess, *share
 	if !a.Member {
 		mode := share.AccessMode
 		if mode == "link" && !settingBool("allow_link_shares") && !isAdminUser(share.OwnerID) {
-			mode = "users" // guest links were disabled by the administrator
+			// Disabling guest links must not turn the link into "any signed-in account".
+			return nil, denied(403, "link_shares_disabled", "The administrator has disabled links for people without an account.")
 		}
 		switch mode {
 		case "members":

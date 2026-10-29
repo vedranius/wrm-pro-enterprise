@@ -467,21 +467,9 @@ func init() {
 		return okIf(len(positionals(a, "-t")) == 0 && !hasOpt(a, "aoBMrwR", "--all", "--options", "--bind", "--move", "--rbind"), "mount with a device mounts it")
 	}
 	roCommands["curl"] = func(a []string) (bool, string) {
-		if hasOpt(a, "oOdFTXKcDJ", "--output", "--remote-name", "--remote-name-all", "--data", "--data-raw", "--data-binary", "--data-urlencode",
-			"--data-ascii", "--form", "--form-string", "--upload-file", "--request", "--config", "--cookie-jar", "--dump-header", "--json",
-			"--output-dir", "--create-dirs", "--trace", "--trace-ascii", "--libcurl", "--etag-save", "--hsts", "--alt-svc", "--stderr") {
-			return false, "this curl option sends data or writes files"
-		}
-		for _, x := range a {
-			l := strings.ToLower(x)
-			if strings.Contains(l, "169.254.169.254") || strings.Contains(l, "metadata.google.internal") || strings.Contains(l, "[fd00:ec2::254]") || strings.Contains(l, "100.100.100.200") {
-				return false, "cloud metadata endpoints may return credentials"
-			}
-			if strings.HasPrefix(l, "file:") || strings.HasPrefix(l, "gopher:") || strings.HasPrefix(l, "dict:") || strings.HasPrefix(l, "scp:") || strings.HasPrefix(l, "sftp:") || strings.HasPrefix(l, "smtp") || strings.HasPrefix(l, "ftp") {
-				return false, "only http(s) URLs are read-only"
-			}
-		}
-		return true, ""
+		// Fetching a URL is network egress: the model can put file contents into the query
+		// string after reading them. It needs an approval (or an automatic-mode pattern).
+		return false, "network requests are a change, not a read"
 	}
 	roCommands["openssl"] = func(a []string) (bool, string) {
 		sub := ""
@@ -621,6 +609,16 @@ var aiReadDenyDefaults = []pathRule{
 	{"**/.vault-token", false, "Vault token"},
 	{"**/.gnupg/**", false, "GnuPG keys"},
 	{".gnupg", true, "GnuPG keys"},
+	{".env", true, "environment file (may hold secrets)"},
+	{".env.*", true, "environment file (may hold secrets)"},
+	{"*.p12", true, "private key bundle"},
+	{"*.pfx", true, "private key bundle"},
+	{".npmrc", true, "registry token"},
+	{".pypirc", true, "registry token"},
+	{"wp-config.php", true, "WordPress database secrets"},
+	{"terraform.tfvars", true, "infrastructure secrets"},
+	{"credentials.json", true, "cloud credentials"},
+	{"**/config/database.yml", false, "database credentials"},
 }
 
 // aiReadDenied returns why a path must not be read ("" when it may be read). A path with

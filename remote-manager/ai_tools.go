@@ -560,6 +560,9 @@ func (s *aiSession) readForEdit(ctx context.Context, p string) (string, string, 
 	}
 	switch {
 	case strings.HasPrefix(out, "WRM-NEW"):
+		if why := aiReadDenied(real); why != "" {
+			return "", "", "", fmt.Errorf("the file is not writable by the assistant (%s)", why)
+		}
 		return "", "new", real, nil
 	case strings.HasPrefix(out, "WRM-ERR "):
 		return "", "", "", fmt.Errorf("%s", strings.TrimSpace(out[8:]))

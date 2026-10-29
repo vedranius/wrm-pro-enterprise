@@ -346,28 +346,38 @@ func loginKeyFingerprint(c Connection) string {
 
 type capBuffer struct {
 	bytes.Buffer
-	max int
+	max       int
+	truncated bool
 }
 
 func (b *capBuffer) Write(p []byte) (int, error) {
 	if room := b.max - b.Len(); room > 0 {
 		if len(p) > room {
 			b.Buffer.Write(p[:room])
+			b.truncated = true
 		} else {
 			b.Buffer.Write(p)
 		}
+	} else if len(p) > 0 {
+		b.truncated = true
 	}
 	return len(p), nil
 }
 
 // runRemoteScript runs a POSIX sh script on an SSH client, feeding stdin, and returns stdout.
 func runRemoteScript(cl *ssh.Client, script, stdin string, timeout time.Duration) (string, error) {
+	return runRemoteScriptLimit(cl, script, stdin, timeout, 2<<20)
+}
+
+// runRemoteScriptLimit is runRemoteScript with an explicit stdout cap. Scans that walk
+// every installation of a server need more than the default.
+func runRemoteScriptLimit(cl *ssh.Client, script, stdin string, timeout time.Duration, outMax int) (string, error) {
 	s, err := cl.NewSession()
 	if err != nil {
 		return "", err
 	}
 	defer s.Close()
-	out, errb := &capBuffer{max: 2 << 20}, &capBuffer{max: 64 << 10}
+	out, errb := &capBuffer{max: outMax}, &capBuffer{max: 64 << 10}
 	s.Stdin = strings.NewReader(stdin)
 	s.Stdout, s.Stderr = out, errb
 	done := make(chan error, 1)
@@ -387,6 +397,9 @@ func runRemoteScript(cl *ssh.Client, script, stdin string, timeout time.Duration
 			msg = err.Error()
 		}
 		return out.String(), errors.New(truncateStr(msg, 400))
+	}
+	if out.truncated {
+		return out.String(), fmt.Errorf("the server answer was larger than %s; narrow the check or split the server", formatMB(int64(outMax)))
 	}
 	return out.String(), nil
 }

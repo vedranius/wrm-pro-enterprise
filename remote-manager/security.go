@@ -392,7 +392,7 @@ func securityMiddleware(next http.Handler) http.Handler {
 		h.Set("Cross-Origin-Opener-Policy", "same-origin")
 		h.Set("Cross-Origin-Resource-Policy", "same-origin")
 		h.Set("Content-Security-Policy", contentSecurityPolicy(r))
-		if r.TLS != nil {
+		if isHTTPS(r) {
 			h.Set("Strict-Transport-Security", "max-age=15552000")
 		}
 		if strings.HasPrefix(r.URL.Path, "/api/") {
