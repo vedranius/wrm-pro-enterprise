@@ -50,7 +50,7 @@ Legenda statusa: `todo` · `wip` · `done` · `n/a` (samo enterprise / samo publ
 | UX-02 | High | 1,27 MB HTML bez gzipa/ETag; vendor JS blokira paint | gzip+ETag; `defer`; SW network-first (SW ostaje) | test: `Content-Encoding`, 304, defer | done | 6a881b3 | 4017ada |
 | UX-03 | High | a11y: 231 label bez `for`, 59 ikona bez imena, 0 `aria-live`, bez focus trapa | `for/id`, `aria-label`, `role=status`, modal helper | test: axe/lighthouse prag; ručna provjera | djelomično (aria-live + lang; labele/focus trap ostaju) | c28086d | 8851e01 |
 | UX-04 | Medium | onboarding/empty state, miješani jezik, "AI connections"/"Medium"/"Session" | copy + first-run kartica + EN/HR na auth | test: vizualna provjera | done | 9628ea2 | 0ce6dc0 |
-| UX-05 | Medium | `esc` u inline handlerima; clipboard u localStorage; addon bridge | `jsq()`, TTL+filtar, frame prefix | test: ime s `'` ne izvršava JS | djelomično (clipboard TTL; jsq sweep ostaje) | 07144d2 | 9ed0105 |
+| UX-05 | Medium | `esc` u inline handlerima; clipboard u localStorage; addon bridge | `jsq()`, TTL+filtar, frame prefix | test: ime s `'` ne izvršava JS | djelomično (clipboard TTL, recovery codes; jsq sweep ostaje) | 8c73ccd | 3df8754 |
 | QA-01 | Medium | Windows test suite ne prolazi; CI samo Ubuntu | GOOS skipovi + windows-latest job | CI zelen na oba OS-a | done | a9709f7 | 27fc325 |
 | ARCH-01 | Medium | Nema deny-by-default autorizacije (150+ ruta) | middleware s allowlistom javnih ruta + test enumeracije | test: nova ruta bez auth pada test | done | 2e431c5 | 0f9f81f |
 

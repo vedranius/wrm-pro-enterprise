@@ -1,3 +1,15 @@
+## Web Remote Manager PRO v14.0.5 — recovery codes out of inline handlers
+
+- **A hardening fix for the 2FA recovery-codes modal:** the codes and the account name are no longer written into `onclick` attributes, where HTML escaping cannot protect a JavaScript string. The buttons get listeners instead.
+
+### Upgrade
+
+Replace the executable or container and keep the database and encryption key. No schema change.
+
+[Download v14.0.5](https://github.com/vedranius/wrm-pro-enterprise/releases/tag/v14.0.5) · [Full changelog](CHANGELOG.md)
+
+---
+
 ## Web Remote Manager PRO v14.0.4 — keyed audit chain, deny-by-default API
 
 **The fifth review batch.**
