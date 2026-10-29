@@ -108,8 +108,47 @@ func hostKeyAlgorithmsFor(keyType string) []string {
 	return []string{keyType}
 }
 
+// canAutoTrustHost says whether a first-use host key may be stored without an explicit
+// accept: the owner of a connection to that host, or an administrator. A user must not be
+// able to seed trust for a host that belongs to someone else.
+func canAutoTrustHost(userID int, host string) bool {
+	if userID <= 0 {
+		return true // internal probes and command-line helpers
+	}
+	return isAdminUser(userID) || userOwnsConnectionToHost(userID, host) || userOwnsBMCHost(userID, host)
+}
+
+// userOwnsBMCHost reports whether the user has a connection whose BMC SSH address is host.
+// The BMC console dials the BMC address (not the server), so it is a separate ownership
+// check from the connection's own host.
+func userOwnsBMCHost(userID int, host string) bool {
+	rows, err := db.Query(`SELECT bmc FROM connections WHERE user_id=? AND COALESCE(bmc,'')<>''`, userID)
+	if err != nil {
+		return false
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var raw string
+		if rows.Scan(&raw) != nil {
+			continue
+		}
+		var b bmcConfig
+		if json.Unmarshal([]byte(raw), &b) != nil || strings.TrimSpace(b.Host) == "" {
+			continue
+		}
+		port := 22
+		if b.SSHPort > 0 {
+			port = b.SSHPort
+		}
+		if normalizeHostKeyHost(joinHostPortSafe(hostOnly(b.Host), strconv.Itoa(port))) == host {
+			return true
+		}
+	}
+	return false
+}
+
 // sshHostKeyCallback verifies the server key. onNew is called when a new key was trusted.
-func sshHostKeyCallback(connHost string, onNew func(fp string)) ssh.HostKeyCallback {
+func sshHostKeyCallback(connHost string, userID int, onNew func(fp string)) ssh.HostKeyCallback {
 	return func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 		policy := getSetting("host_key_policy")
 		if policy == "off" {
@@ -120,6 +159,10 @@ func sshHostKeyCallback(connHost string, onNew func(fp string)) ssh.HostKeyCallb
 		stored, ok := lookupHostKey(host)
 		if !ok {
 			if policy == "strict" {
+				rememberPendingKey(host, fp, key.Marshal(), key.Type())
+				return &hostKeyError{Kind: "unknown", Host: host, KeyType: key.Type(), Got: fp}
+			}
+			if !canAutoTrustHost(userID, host) {
 				rememberPendingKey(host, fp, key.Marshal(), key.Type())
 				return &hostKeyError{Kind: "unknown", Host: host, KeyType: key.Type(), Got: fp}
 			}
@@ -145,7 +188,7 @@ func sshHostKeyCallback(connHost string, onNew func(fp string)) ssh.HostKeyCallb
 func sshClientConfig(c Connection, am []ssh.AuthMethod, onNew func(string)) *ssh.ClientConfig {
 	cfg := &ssh.ClientConfig{
 		User: c.Username, Auth: am,
-		HostKeyCallback: sshHostKeyCallback(c.Host, onNew),
+		HostKeyCallback: sshHostKeyCallback(c.Host, c.UserID, onNew),
 		Timeout:         15 * time.Second,
 	}
 	if getSetting("host_key_policy") != "off" {

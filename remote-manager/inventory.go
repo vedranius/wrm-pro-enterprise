@@ -743,6 +743,9 @@ func netboxBase(raw string) (*url.URL, error) {
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 		return nil, fmt.Errorf("enter the NetBox address, e.g. https://netbox.example.com")
 	}
+	if err := guardEgressURL(u.String()); err != nil {
+		return nil, err
+	}
 	u.Path = strings.TrimSuffix(strings.TrimRight(u.Path, "/"), "/api")
 	u.RawQuery, u.Fragment = "", ""
 	return u, nil

@@ -24,6 +24,7 @@ import (
 	"math/big"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -300,6 +301,31 @@ func clientIP(r *http.Request) string {
 
 func isHTTPS(r *http.Request) bool {
 	return r.TLS != nil || (trustProxy && strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https"))
+}
+
+// guardEgressURL refuses URLs that point at a cloud metadata service or a link-local
+// address. They are never a legitimate Git, NetBox or AI provider target and are the
+// fastest route from server-side request forgery to credentials.
+func guardEgressURL(raw string) error {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") || u.User != nil {
+		return fmt.Errorf("the address must be an http(s) URL without credentials")
+	}
+	h := strings.ToLower(u.Hostname())
+	switch h {
+	case "metadata.google.internal", "metadata.goog", "instance-data":
+		return fmt.Errorf("%s is a cloud metadata endpoint", h)
+	}
+	if ip := net.ParseIP(h); ip != nil {
+		switch ip.String() {
+		case "169.254.169.254", "100.100.100.200", "fd00:ec2::254":
+			return fmt.Errorf("%s is a cloud metadata endpoint", h)
+		}
+		if ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+			return fmt.Errorf("%s is a link-local address", h)
+		}
+	}
+	return nil
 }
 
 func setCookie(w http.ResponseWriter, r *http.Request, name, value string, maxAge int) {

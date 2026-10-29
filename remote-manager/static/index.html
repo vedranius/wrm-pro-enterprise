@@ -6849,7 +6849,7 @@ async function doLogout() {
   stopSessionKeepalive();
   try { if (voice.active) voiceLeave(true); } catch(_) {}
   // Signing out forgets this user's clipboard history on this browser (it may hold secrets).
-  try { const k = clipStorageKey(); if (k) localStorage.removeItem(k); } catch(_) {}
+  try { const k = clipStorageKey(); if (k) { localStorage.removeItem(k); localStorage.removeItem(k + ':at'); } } catch(_) {}
   clipData = {};
   await fetch('/api/auth/logout', {method: 'POST'}).catch(() => {});
   location.href = '/';
@@ -13470,7 +13470,18 @@ function clipStorageKey() { return currentUser && currentUser.id != null ? CLIP_
 function loadClipboard() {
   try { localStorage.removeItem(CLIP_KEY); } catch(_) {}
   const key = clipStorageKey();
-  try { clipData = key ? JSON.parse(localStorage.getItem(key) || '{}') : {}; } catch(_) { clipData = {}; }
+  try {
+    if (key) {
+      // Terminal clipboard history may hold secrets; it expires after an hour of no use.
+      const at = Number(localStorage.getItem(key + ':at') || 0);
+      if (at && Date.now() - at > 60 * 60 * 1000) {
+        localStorage.removeItem(key);
+        localStorage.removeItem(key + ':at');
+        clipData = {};
+      }
+    }
+    clipData = key ? JSON.parse(localStorage.getItem(key) || '{}') : {};
+  } catch(_) { clipData = {}; }
   renderClipboard(currentSessionId);
 }
 
@@ -13482,7 +13493,10 @@ function loadClipboardForSession(sessId) {
 function saveClipboard() {
   const key = clipStorageKey();
   if (!key) return;
-  try { localStorage.setItem(key, JSON.stringify(clipData)); } catch(_) {}
+  try {
+    localStorage.setItem(key, JSON.stringify(clipData));
+    localStorage.setItem(key + ':at', String(Date.now()));
+  } catch(_) {}
 }
 
 function addClip(text) {

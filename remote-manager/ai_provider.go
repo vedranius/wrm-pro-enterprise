@@ -346,6 +346,9 @@ func (in aiProviderInput) apply(p *aiProvider) error {
 		if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil {
 			return fmt.Errorf("the base URL must be an http(s) URL without credentials")
 		}
+		if err := guardEgressURL(p.BaseURL); err != nil {
+			return err
+		}
 		p.BaseURL = strings.TrimRight(p.BaseURL, "/")
 	}
 	if p.PriceIn < 0 || p.PriceOut < 0 || p.PriceIn > 10000 || p.PriceOut > 10000 {

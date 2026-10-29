@@ -85,6 +85,9 @@ type oidcCachedKeys struct {
 // oidcURLAllowed: identity provider addresses must use HTTPS (plain HTTP only on loopback, for a
 // provider running on the WRM host itself).
 func oidcURLAllowed(raw string) error {
+	if err := guardEgressURL(raw); err != nil {
+		return err
+	}
 	u, err := url.Parse(raw)
 	if err != nil || u.Host == "" {
 		return fmt.Errorf("%q is not a valid address", raw)

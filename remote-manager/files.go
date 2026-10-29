@@ -82,6 +82,9 @@ func requireMethod(w http.ResponseWriter, r *http.Request, methods ...string) bo
 // control and data connections go through the jump host's SSH connection. Always call
 // the returned close function (it also closes the jump host connection).
 func dialFTP(c Connection) (*ftp.ServerConn, func(), error) {
+	if err := guardLoopbackTunnel(c); err != nil {
+		return nil, nil, err
+	}
 	opts := []ftp.DialOption{ftp.DialWithTimeout(15 * time.Second)}
 	ftps := strings.ToUpper(c.Protocol) == "FTPS"
 	tlsCfg := ftpsTLSConfig(c) // one config for the control and the data connections

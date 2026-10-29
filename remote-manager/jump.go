@@ -99,6 +99,9 @@ func isSSHProtocol(c Connection) bool {
 // dialSSH opens an SSH client to c, through its jump hosts when configured.
 // onNewKey (optional) is told about host keys trusted on first use, with the host name.
 func dialSSH(c Connection, onNewKey func(host, fp string)) (*ssh.Client, error) {
+	if err := guardLoopbackTunnel(c); err != nil {
+		return nil, err
+	}
 	chain, err := jumpChain(c)
 	if err != nil {
 		return nil, err

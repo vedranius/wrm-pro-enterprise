@@ -282,6 +282,30 @@ func (m *tunnelManager) localListenerOwner(port int) int {
 	return 0
 }
 
+// guardLoopbackTunnel refuses a connection target that is a loopback port currently held
+// by another user's tunnel. Without it, any user could reach that tunnel (and the owner's
+// SSH login and network position) through an ordinary connection or a connection test.
+func guardLoopbackTunnel(c Connection) error {
+	host, portStr, err := net.SplitHostPort(ensurePort(c.Host, c.Protocol))
+	if err != nil {
+		return nil
+	}
+	ip := net.ParseIP(strings.Trim(host, "[]"))
+	if ip == nil || !ip.IsLoopback() {
+		if !strings.EqualFold(host, "localhost") {
+			return nil
+		}
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return nil
+	}
+	if owner := tunnelMgr.localListenerOwner(port); owner != 0 && owner != c.UserID {
+		return fmt.Errorf("port %d on this host belongs to another user's tunnel", port)
+	}
+	return nil
+}
+
 func (m *tunnelManager) get(key string) *tunnelRun {
 	m.mu.Lock()
 	defer m.mu.Unlock()
