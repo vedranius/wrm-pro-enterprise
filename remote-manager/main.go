@@ -461,7 +461,7 @@ func newRouter() http.Handler {
 	mux.HandleFunc("/ws/desktop", desktopWSHandler)
 	mux.HandleFunc("/ws/share/", shareWSHandler)
 	mux.HandleFunc("/ws/events", eventsHandler)
-	return securityMiddleware(mux)
+	return securityMiddleware(authGate(mux))
 }
 
 func main() {
