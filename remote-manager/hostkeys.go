@@ -115,7 +115,36 @@ func canAutoTrustHost(userID int, host string) bool {
 	if userID <= 0 {
 		return true // internal probes and command-line helpers
 	}
-	return isAdminUser(userID) || userOwnsConnectionToHost(userID, host)
+	return isAdminUser(userID) || userOwnsConnectionToHost(userID, host) || userOwnsBMCHost(userID, host)
+}
+
+// userOwnsBMCHost reports whether the user has a connection whose BMC SSH address is host.
+// The BMC console dials the BMC address (not the server), so it is a separate ownership
+// check from the connection's own host.
+func userOwnsBMCHost(userID int, host string) bool {
+	rows, err := db.Query(`SELECT bmc FROM connections WHERE user_id=? AND COALESCE(bmc,'')<>''`, userID)
+	if err != nil {
+		return false
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var raw string
+		if rows.Scan(&raw) != nil {
+			continue
+		}
+		var b bmcConfig
+		if json.Unmarshal([]byte(raw), &b) != nil || strings.TrimSpace(b.Host) == "" {
+			continue
+		}
+		port := 22
+		if b.SSHPort > 0 {
+			port = b.SSHPort
+		}
+		if normalizeHostKeyHost(joinHostPortSafe(hostOnly(b.Host), strconv.Itoa(port))) == host {
+			return true
+		}
+	}
+	return false
 }
 
 // sshHostKeyCallback verifies the server key. onNew is called when a new key was trusted.

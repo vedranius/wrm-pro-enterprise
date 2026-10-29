@@ -45,4 +45,14 @@ func TestHostKeyAutoTrustScoped(t *testing.T) {
 	if !canAutoTrustHost(0, "192.0.2.10:22") {
 		t.Error("internal callers lost auto-trust")
 	}
+
+	if _, err := db.Exec(`UPDATE connections SET bmc=? WHERE user_id=?`, `{"type":"redfish","host":"10.9.9.9","ssh_port":2222}`, owner); err != nil {
+		t.Fatal(err)
+	}
+	if !canAutoTrustHost(owner, "10.9.9.9:2222") {
+		t.Error("the BMC owner cannot auto-trust the BMC address")
+	}
+	if canAutoTrustHost(other, "10.9.9.9:2222") {
+		t.Error("another user can auto-trust the BMC address")
+	}
 }
