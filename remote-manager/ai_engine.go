@@ -489,6 +489,20 @@ func aiAutoSummary(a *aiAutoLimits) map[string]interface{} {
 	return m
 }
 
+// modeAndAuto returns the mode and a copy of the automatic-mode limits. The copy matters:
+// another goroutine replaces s.Auto when the user changes the mode, so a caller that kept
+// the pointer (or read the two fields separately) raced with it.
+func (s *aiSession) modeAndAuto() (string, *aiAutoLimits) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	mode := s.Mode
+	if s.Auto == nil {
+		return mode, nil
+	}
+	a := *s.Auto
+	return mode, &a
+}
+
 // view is the session as the browser sees it (no secrets).
 func (s *aiSession) view() map[string]interface{} {
 	s.mu.Lock()
