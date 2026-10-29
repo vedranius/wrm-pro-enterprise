@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/ecdsa"
@@ -27,8 +28,10 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -352,11 +355,45 @@ func sameOriginRequest(r *http.Request) bool {
 	return originAllowed(r, origin)
 }
 
+// inlineScriptRE finds <script> elements so their inline bodies can be hashed for the CSP.
+var inlineScriptRE = regexp.MustCompile(`(?is)<script([^>]*)>(.*?)</script>`)
+
+var (
+	inlineScriptHashesOnce  sync.Once
+	inlineScriptHashesValue []string
+)
+
+// inlineScriptHashes lists the CSP hashes of the inline <script> blocks of the UI page. The
+// page is embedded and static, so one startup pass is enough: a per-request nonce would make
+// every response different and defeat the ETag cache.
+func inlineScriptHashes() []string {
+	inlineScriptHashesOnce.Do(func() {
+		data, err := staticFiles.ReadFile("static/index.html")
+		if err != nil {
+			return
+		}
+		for _, m := range inlineScriptRE.FindAllSubmatch(data, -1) {
+			if len(m) < 3 || len(m[2]) == 0 || bytes.Contains(bytes.ToLower(m[1]), []byte("src=")) {
+				continue
+			}
+			sum := sha256.Sum256(m[2])
+			inlineScriptHashesValue = append(inlineScriptHashesValue, "'sha256-"+base64.StdEncoding.EncodeToString(sum[:])+"'")
+		}
+	})
+	return inlineScriptHashesValue
+}
+
 func contentSecurityPolicy(r *http.Request) string {
 	host := r.Host
+	script := append([]string{"'self'"}, inlineScriptHashes()...)
 	return strings.Join([]string{
 		"default-src 'self'",
-		"script-src 'self' 'unsafe-inline'",
+		"script-src " + strings.Join(script, " "),
+		// The UI still uses on* attributes (onclick and friends). script-src-attr keeps
+		// them working while script elements themselves need a hash, so an injected
+		// <script> or a data: source is refused. Moving the handlers to addEventListener
+		// would let this directive go as well.
+		"script-src-attr 'unsafe-inline'",
 		"style-src 'self' 'unsafe-inline'",
 		"img-src 'self' data: blob:",
 		"font-src 'self' data:",
