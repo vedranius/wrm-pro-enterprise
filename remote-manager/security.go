@@ -306,9 +306,47 @@ func isHTTPS(r *http.Request) bool {
 	return r.TLS != nil || (trustProxy && strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https"))
 }
 
+// isPrivateHost reports whether h is a loopback, private (RFC 1918 / ULA) or link-local
+// address. They are legitimate on-premise targets, but not on a server that should only
+// reach the public internet, where they turn into a route to internal services.
+func isPrivateHost(h string) bool {
+	if h == "localhost" || strings.HasSuffix(h, ".localhost") {
+		return true
+	}
+	ip := net.ParseIP(h)
+	if ip == nil {
+		return false
+	}
+	return ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsUnspecified()
+}
+
+// egressPrivateAllowed reports whether the administrator listed h in egress_allow_hosts
+// (host names, addresses or CIDR blocks, comma separated).
+func egressPrivateAllowed(h string) bool {
+	for _, raw := range strings.Split(getSetting("egress_allow_hosts"), ",") {
+		entry := strings.ToLower(strings.TrimSpace(raw))
+		if entry == "" {
+			continue
+		}
+		if entry == h {
+			return true
+		}
+		if strings.Contains(entry, "/") {
+			if _, block, err := net.ParseCIDR(entry); err == nil {
+				if ip := net.ParseIP(h); ip != nil && block.Contains(ip) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 // guardEgressURL refuses URLs that point at a cloud metadata service or a link-local
 // address. They are never a legitimate Git, NetBox or AI provider target and are the
-// fastest route from server-side request forgery to credentials.
+// fastest route from server-side request forgery to credentials. With egress_policy set to
+// public_only, private and loopback targets are refused as well unless an administrator
+// listed them in egress_allow_hosts.
 func guardEgressURL(raw string) error {
 	u, err := url.Parse(strings.TrimSpace(raw))
 	if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") || u.User != nil {
@@ -327,6 +365,9 @@ func guardEgressURL(raw string) error {
 		if ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
 			return fmt.Errorf("%s is a link-local address", h)
 		}
+	}
+	if getSetting("egress_policy") == "public_only" && isPrivateHost(h) && !egressPrivateAllowed(h) {
+		return fmt.Errorf("%s is a private address; list it in egress_allow_hosts or choose the allow_private egress policy", h)
 	}
 	return nil
 }

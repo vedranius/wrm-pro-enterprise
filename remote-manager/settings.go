@@ -231,6 +231,11 @@ var settingSpecs = []settingSpec{
 	// Audit & session recording
 	{Key: "audit_enabled", Default: "1", Kind: "bool", Alias: "AUDIT_ENABLED"},
 	{Key: "audit_retention_days", Default: "365", Kind: "int", Min: 7, Max: 3650},
+	// Outbound targets for Git sources, NetBox, AI providers and OIDC (security.go). With
+	// public_only, private and loopback addresses are refused unless listed in
+	// egress_allow_hosts (names, addresses or CIDR blocks, comma separated).
+	{Key: "egress_policy", Default: "allow_private", Kind: "enum", Enum: []string{"allow_private", "public_only"}},
+	{Key: "egress_allow_hosts", Default: "", Kind: "string"},
 	// Scheduled database snapshots (backup.go): a VACUUM INTO copy in <DB>.backups every 24 h.
 	{Key: "backup_daily", Default: "off", Kind: "enum", Enum: []string{"off", "daily"}},
 	{Key: "backup_keep", Default: "7", Kind: "int", Min: 1, Max: 60},
