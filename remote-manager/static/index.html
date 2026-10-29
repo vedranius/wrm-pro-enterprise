@@ -401,6 +401,9 @@ button:hover { background: var(--accent-h); }
 .conn-proto-badge.sftp { background: rgba(var(--green-rgb),.12); color: var(--green-t); }
 .conn-proto-badge.ftp { background: rgba(var(--yellow-rgb),.12); color: var(--yellow-t); }
 .no-results { padding: 16px 8px; font-size: 11px; color: var(--text3); text-align: center; font-family: var(--font-mono); }
+.first-run { margin: 12px 8px; padding: 18px 16px; border: 1px dashed var(--border); border-radius: 10px; text-align: center; }
+.first-run-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.first-run-text { font-size: 12px; color: var(--text3); margin-bottom: 12px; line-height: 1.5; }
 #root-drop { margin: 4px 5px; padding: 6px 8px; font-size: 10px; text-align: center; color: var(--text3); border: 1px dashed var(--border); border-radius: 4px; }
 #root-drop.drag-over { border-color: var(--accent); color: var(--accent); background: var(--accent-d); }
 
@@ -3290,6 +3293,8 @@ const LANGS = {
     username:'Username', password:'Password',
     search_connections:'🔍 Search connections...',
     new_folder:'📁 Folder', new_connection:'+ Connection',
+    first_run_title:'Welcome to WRM PRO',
+    first_run_text:'Add your first connection (SSH, RDP, VNC or a web link). Folders, snippets and an imported configuration from another client work too.',
     my_connections:'MY CONNECTIONS', shared_with_me:'SHARED WITH ME',
     session_label:'SESSION:', none_selected:'— none —',
     new_window:'＋ New Window', sign_out:'Sign Out', settings:'⚙ Settings', shares:'🤝 Shares',
@@ -3381,6 +3386,8 @@ const LANGS = {
     username:'Korisničko ime', password:'Lozinka',
     search_connections:'🔍 Traži veze...',
     new_folder:'📁 Mapa', new_connection:'+ Veza',
+    first_run_title:'Dobro došli u WRM PRO',
+    first_run_text:'Dodajte prvu vezu (SSH, RDP, VNC ili web poveznicu). Mape, snippetovi i uvezena konfiguracija iz drugog klijenta također rade.',
     my_connections:'MOJE VEZE', shared_with_me:'PODIJELJENO SA MNOM',
     session_label:'SESIJA:', none_selected:'— nije odabrana —',
     new_window:'＋ Novi prozor', sign_out:'Odjava', settings:'⚙ Postavke', shares:'🤝 Dijeljenja',
@@ -7217,8 +7224,10 @@ function renderTree() {
 
   if (conns.length === 0 && !query) {
     const hint = document.createElement('div');
-    hint.className = 'no-results';
-    hint.textContent = 'No connections yet. Add one above.';
+    hint.className = 'first-run';
+    hint.innerHTML = `<div class="first-run-title">${esc(t('first_run_title'))}</div>`
+      + `<div class="first-run-text">${esc(t('first_run_text'))}</div>`
+      + `<button class="btn-pri" type="button" onclick="openConnModal()">${esc(t('new_connection'))}</button>`;
     wrap.appendChild(hint);
   } else if (query && rootConns.length === 0 && folders.every(f => conns.filter(c => c.folder_id === f.id && connMatches(c, query)).length === 0)) {
     const hint = document.createElement('div');
