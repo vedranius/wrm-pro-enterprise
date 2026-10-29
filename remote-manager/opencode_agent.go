@@ -302,10 +302,10 @@ func (s *aiSession) ocStart(r *http.Request, agent string, sandbox bool) error {
 	if err != nil {
 		return err
 	}
-	q := mcpGrantRequest{Name: fmt.Sprintf("OpenCode agent · AI session %d", s.ID), ConnIDs: []int{s.ConnID}, Mode: s.Mode, Scopes: ocScopes(s.Mode), Hours: 24, kind: "opencode"}
-	if s.Auto != nil {
-		a := *s.Auto
-		q.Auto, q.Confirm = &a, true
+	mode, auto := s.modeAndAuto()
+	q := mcpGrantRequest{Name: fmt.Sprintf("OpenCode agent · AI session %d", s.ID), ConnIDs: []int{s.ConnID}, Mode: mode, Scopes: ocScopes(mode), Hours: 24, kind: "opencode"}
+	if auto != nil {
+		q.Auto, q.Confirm = auto, true
 	}
 	if mh := settingInt("ai_mcp_max_token_hours"); q.Hours > mh {
 		q.Hours = mh
@@ -357,7 +357,7 @@ func (s *aiSession) ocStart(r *http.Request, agent string, sandbox bool) error {
 		return fail(err)
 	}
 	// the server session the agent works in, opened like an MCP client's open_session
-	mode, auto := s.Mode, s.Auto
+	mode, auto = s.modeAndAuto()
 	if mode == aiModeAuto && auto == nil {
 		mode = aiModeAsk
 	}
