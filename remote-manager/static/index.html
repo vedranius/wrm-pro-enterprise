@@ -1756,11 +1756,11 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
       <div id="auth-sso" style="display:none;"></div>
       <div id="auth-local">
       <div class="auth-field">
-        <label data-i18n="username">Username</label>
+        <label data-i18n="username" for="auth-user">Username</label>
         <input type="text" id="auth-user" placeholder="Enter username" data-i18n-placeholder="auth_ph_user" autocomplete="username" autocapitalize="off" spellcheck="false" onkeydown="if(event.key==='Enter') document.getElementById('auth-pass').focus()">
       </div>
       <div class="auth-field">
-        <label data-i18n="password">Password</label>
+        <label data-i18n="password" for="auth-pass">Password</label>
         <input type="password" id="auth-pass" placeholder="Enter password" data-i18n-placeholder="auth_ph_pass" autocomplete="current-password"
                onkeydown="if(event.key==='Enter') doAuth()">
       </div>
@@ -1779,7 +1779,7 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
       <div class="auth-note" data-i18n="mfa_prompt">Enter the 6-digit code from your authenticator app. You can also use one of your recovery codes.</div>
       <div id="auth-mfa-error" class="auth-error"></div>
       <div class="auth-field">
-        <label data-i18n="verification_code">Verification code</label>
+        <label data-i18n="verification_code" for="auth-mfa-code">Verification code</label>
         <input type="text" id="auth-mfa-code" class="code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="11" placeholder="123456" onkeydown="if(event.key==='Enter') doMFA()">
       </div>
       <button class="auth-btn" onclick="doMFA()" data-i18n="verify">Verify</button>
@@ -1968,11 +1968,11 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
     <input type="hidden" id="m-id">
     <div class="field-row">
       <div class="field">
-        <label data-i18n="folder_lbl">Folder</label>
+        <label data-i18n="folder_lbl" for="m-folder">Folder</label>
         <select id="m-folder" onchange="onConnFolderChange()"><option value="">— No Folder —</option></select>
       </div>
       <div class="field">
-        <label data-i18n="protocol">Protocol</label>
+        <label data-i18n="protocol" for="m-proto">Protocol</label>
         <select id="m-proto" onchange="onProtoChange()">
           <option value="SSH">SSH</option>
           <option value="SFTP">SFTP</option>
@@ -1987,30 +1987,30 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
         </select>
       </div>
     </div>
-    <div class="field"><label data-i18n="name_lbl">Name</label><input type="text" id="m-name" placeholder="e.g. Web Server 1">
+    <div class="field"><label data-i18n="name_lbl" for="m-name">Name</label><input type="text" id="m-name" placeholder="e.g. Web Server 1">
       <label class="check-row" style="margin:6px 0 0;"><input type="checkbox" id="m-name-host" onchange="onNameFromHost()"> <span><b data-i18n="name_from_host">Use the server's hostname as the name</b> — <span data-i18n="name_from_host_d">After saving, WRM logs in once and reads the hostname.</span></span></label></div>
-    <div class="field"><label data-i18n="tags_lbl">Tags</label><input type="text" id="m-tags" autocomplete="off" oninput="renderTagSuggestions()" placeholder="env:prod, site:dc1, rack:a12, web">
+    <div class="field"><label data-i18n="tags_lbl" for="m-tags">Tags</label><input type="text" id="m-tags" autocomplete="off" oninput="renderTagSuggestions()" placeholder="env:prod, site:dc1, rack:a12, web">
       <div class="tag-sugg" id="m-tags-sugg"></div></div>
     <div class="field-row">
-      <div class="field"><label data-i18n="host_port">Host : Port</label><input type="text" id="m-host" placeholder="192.168.1.1:22"></div>
-      <div class="field" id="field-webpath" style="display:none;"><label data-i18n="web_path">Path</label><input type="text" id="m-webpath" placeholder="/"></div>
+      <div class="field"><label data-i18n="host_port" for="m-host">Host : Port</label><input type="text" id="m-host" placeholder="192.168.1.1:22"></div>
+      <div class="field" id="field-webpath" style="display:none;"><label data-i18n="web_path" for="m-webpath">Path</label><input type="text" id="m-webpath" placeholder="/"></div>
     </div>
     <div class="field">
-      <label data-i18n="jump_host">Jump host (connect via)</label>
+      <label data-i18n="jump_host" for="m-jump">Jump host (connect via)</label>
       <select id="m-jump"></select>
       <div class="muted-text" style="margin-top:4px;" id="m-jump-help" data-i18n="jump_host_help">Reach this server through another saved SSH connection (bastion / jump host), like ssh -J. That connection can have its own jump host (chains).</div>
     </div>
     <div class="field" id="m-proxy-field">
-      <label data-i18n="proxy_lbl">Proxy</label>
+      <label data-i18n="proxy_lbl" for="m-proxy">Proxy</label>
       <select id="m-proxy" onchange="onProxyPick()"></select>
       <div class="muted-text" style="margin-top:4px;line-height:1.5;" id="m-proxy-help" data-i18n="proxy_help">A SOCKS or HTTP proxy for everything this connection does over TCP. With a jump host, the proxy is reached through it. IPMI and Serial-over-LAN use UDP and do not go through a proxy.</div>
       <div class="muted-text" id="m-route" style="margin-top:4px;"></div>
     </div>
     <label class="check-row" id="m-monitor-row"><input type="checkbox" id="m-monitor" checked> <span><b data-i18n="st_monitor">Monitor up/down status</b> — <span data-i18n="st_monitor_d">checked regularly with a connection to its port, like a monitoring system (no login).</span></span></label>
     <div id="m-auth-fields">
-    <div class="field"><label data-i18n="username">Username</label><input type="text" id="m-user" placeholder="root"></div>
+    <div class="field"><label data-i18n="username" for="m-user">Username</label><input type="text" id="m-user" placeholder="root"></div>
     <div class="field">
-      <label data-i18n="authentication">Authentication</label>
+      <label data-i18n="authentication" for="m-auth">Authentication</label>
       <select id="m-auth" onchange="onAuthMethodChange()">
         <option value="PASSWORD">Password</option>
         <option value="KEY">Private Key (paste)</option>
@@ -2021,17 +2021,17 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
         <option value="BITWARDEN" id="opt-bitwarden">🔐 Bitwarden SSH key</option>
       </select>
     </div>
-    <div class="field" id="field-keyref" style="display:none;"><label data-i18n="vk_key">SSH key</label><select id="m-keyref"></select>
+    <div class="field" id="field-keyref" style="display:none;"><label data-i18n="vk_key" for="m-keyref">SSH key</label><select id="m-keyref"></select>
       <div class="muted-text" style="margin-top:5px;"><a href="#" onclick="openVault('keys'); return false;" data-i18n="vault_manage_keys">Manage keys…</a></div></div>
-    <div class="field" id="field-cred" style="display:none;"><label data-i18n="vc_cred">Credential</label><select id="m-cred" onchange="onCredPick()"></select>
+    <div class="field" id="field-cred" style="display:none;"><label data-i18n="vc_cred" for="m-cred">Credential</label><select id="m-cred" onchange="onCredPick()"></select>
       <div class="muted-text" id="m-cred-info" style="margin-top:5px;line-height:1.5;"></div></div>
-    <div class="field" id="field-bitwarden" style="display:none;"><label data-i18n="bw_key">Bitwarden SSH key</label><select id="m-bitwarden"></select><div class="muted-text"><a href="#" onclick="openVault('bitwarden');return false;" data-i18n="bw_manage">Sign in / unlock Bitwarden</a> · <a href="#" onclick="loadBitwardenKeys();return false;" data-i18n="bw_refresh">Refresh</a></div></div>
+    <div class="field" id="field-bitwarden" style="display:none;"><label data-i18n="bw_key" for="m-bitwarden">Bitwarden SSH key</label><select id="m-bitwarden"></select><div class="muted-text"><a href="#" onclick="openVault('bitwarden');return false;" data-i18n="bw_manage">Sign in / unlock Bitwarden</a> · <a href="#" onclick="loadBitwardenKeys();return false;" data-i18n="bw_refresh">Refresh</a></div></div>
     <div class="field" id="m-reveal-row" style="display:none;"><button type="button" class="btn-sec btn-sm" id="m-reveal" onclick="revealConnLogin()" data-i18n-title="cs_show_t" title="Show saved login">👁 <span data-i18n="cs_show_login">Show saved login</span></button></div>
     <div class="field" id="field-pass"><label data-i18n="password">Password</label><div class="pw-wrap"><input type="password" id="m-pass" autocomplete="new-password"><button type="button" class="pw-eye" id="m-pass-eye" onclick="toggleConnPass()" data-i18n-title="cs_show_t" title="Show">👁</button></div>
       <div class="muted-text" id="m-pass-note" style="display:none;margin-top:5px;">🔒 <span data-i18n="secret_stored">Saved and encrypted — leave empty to keep it.</span> <label style="display:inline-flex;align-items:center;gap:4px;margin-left:6px;text-transform:none;letter-spacing:0;font-size:11px;font-weight:400;"><input type="checkbox" id="m-pass-clear" style="width:auto;"> <span data-i18n="remove_saved">remove saved</span></label></div></div>
-    <div class="field" id="field-key" style="display:none;"><label data-i18n="private_key">Private Key</label><textarea id="m-key" rows="5" placeholder="Paste your private key here..." autocomplete="off" spellcheck="false"></textarea>
+    <div class="field" id="field-key" style="display:none;"><label data-i18n="private_key" for="m-key">Private Key</label><textarea id="m-key" rows="5" placeholder="Paste your private key here..." autocomplete="off" spellcheck="false"></textarea>
       <div class="muted-text" id="m-key-note" style="display:none;margin-top:5px;">🔒 <span data-i18n="secret_stored">Saved and encrypted — leave empty to keep it.</span> <label style="display:inline-flex;align-items:center;gap:4px;margin-left:6px;text-transform:none;letter-spacing:0;font-size:11px;font-weight:400;"><input type="checkbox" id="m-key-clear" style="width:auto;"> <span data-i18n="remove_saved">remove saved</span></label></div></div>
-    <div class="field" id="field-key-file" style="display:none;"><label data-i18n="key_file_path">Key File Path</label><input type="text" id="m-keypath" placeholder="~/.ssh/id_rsa"></div>
+    <div class="field" id="field-key-file" style="display:none;"><label data-i18n="key_file_path" for="m-keypath">Key File Path</label><input type="text" id="m-keypath" placeholder="~/.ssh/id_rsa"></div>
     </div>
     <details class="tun-box" id="m-desk-box" open style="display:none;">
       <summary>🖥 <span id="m-desk-title" data-i18n="desk_options">Remote desktop options</span></summary>
@@ -2047,18 +2047,18 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
       <summary>⚡ <span data-i18n="bmc_title">Out-of-band management (iDRAC, iLO, IPMI)</span> <span class="pill" id="m-bmc-pill" style="display:none;"></span></summary>
       <div class="muted-text" data-i18n="bmc_help">The management controller (BMC) of the server: power on, off and restart, health, and the serial console — also when the operating system does not answer. Redfish works with iDRAC, iLO, XClarity, Supermicro and OpenBMC; IPMI uses ipmitool.</div>
       <div class="field-row">
-        <div class="field"><label data-i18n="bmc_type">Type</label><select id="m-bmc-type" onchange="onBmcTypeChange()"><option value="" data-i18n="bmc_none">none</option><option value="redfish">Redfish (iDRAC, iLO, XClarity…)</option><option value="ipmi">IPMI (ipmitool)</option></select></div>
-        <div class="field"><label data-i18n="bmc_addr">BMC address</label><input type="text" id="m-bmc-host" placeholder="10.0.100.11"></div>
+        <div class="field"><label data-i18n="bmc_type" for="m-bmc-type">Type</label><select id="m-bmc-type" onchange="onBmcTypeChange()"><option value="" data-i18n="bmc_none">none</option><option value="redfish">Redfish (iDRAC, iLO, XClarity…)</option><option value="ipmi">IPMI (ipmitool)</option></select></div>
+        <div class="field"><label data-i18n="bmc_addr" for="m-bmc-host">BMC address</label><input type="text" id="m-bmc-host" placeholder="10.0.100.11"></div>
       </div>
       <div id="m-bmc-more">
         <div class="field-row">
-          <div class="field"><label data-i18n="inv_login">Login</label><select id="m-bmc-cred" onchange="onBmcTypeChange()"></select></div>
-          <div class="field" id="m-bmc-user-f"><label data-i18n="username">Username</label><input type="text" id="m-bmc-user" placeholder="root"></div>
-          <div class="field" id="m-bmc-pass-f"><label data-i18n="password">Password</label><input type="password" id="m-bmc-pass" autocomplete="new-password"></div>
+          <div class="field"><label data-i18n="inv_login" for="m-bmc-cred">Login</label><select id="m-bmc-cred" onchange="onBmcTypeChange()"></select></div>
+          <div class="field" id="m-bmc-user-f"><label data-i18n="username" for="m-bmc-user">Username</label><input type="text" id="m-bmc-user" placeholder="root"></div>
+          <div class="field" id="m-bmc-pass-f"><label data-i18n="password" for="m-bmc-pass">Password</label><input type="password" id="m-bmc-pass" autocomplete="new-password"></div>
         </div>
         <div class="field-row">
-          <div class="field"><label data-i18n="bmc_console">Serial console command (BMC SSH)</label><input type="text" id="m-bmc-console" list="m-bmc-console-list" placeholder="console com2"><datalist id="m-bmc-console-list"><option value="console com2">Dell iDRAC</option><option value="vsp">HPE iLO</option><option value="console 1">Lenovo XClarity</option><option value="cd system1/sol1; start">Supermicro</option></datalist></div>
-          <div class="field"><label data-i18n="bmc_ssh_port">BMC SSH port</label><input type="number" id="m-bmc-sshport" min="1" max="65535" placeholder="22"></div>
+          <div class="field"><label data-i18n="bmc_console" for="m-bmc-console">Serial console command (BMC SSH)</label><input type="text" id="m-bmc-console" list="m-bmc-console-list" placeholder="console com2"><datalist id="m-bmc-console-list"><option value="console com2">Dell iDRAC</option><option value="vsp">HPE iLO</option><option value="console 1">Lenovo XClarity</option><option value="cd system1/sol1; start">Supermicro</option></datalist></div>
+          <div class="field"><label data-i18n="bmc_ssh_port" for="m-bmc-sshport">BMC SSH port</label><input type="number" id="m-bmc-sshport" min="1" max="65535" placeholder="22"></div>
         </div>
         <label class="check-row" id="m-bmc-via-row"><input type="checkbox" id="m-bmc-via"> <span><b data-i18n="bmc_via">Through the jump host</b> — <span data-i18n="bmc_via_d">the management network is reached from the jump host of this connection (Redfish over SSH; ipmitool runs on the jump host).</span></span></label>
       </div>
@@ -2090,10 +2090,10 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
   <div class="modal" style="width:min(480px, calc(100vw - 24px));">
     <h3 id="f-title">New Folder</h3>
     <input type="hidden" id="f-id">
-    <div class="field"><label data-i18n="name_lbl">Name</label><input type="text" id="f-name" placeholder="e.g. Production" onkeydown="if(event.key==='Enter') saveFolder()"></div>
-    <div class="field"><label data-i18n="fd_parent">Parent folder</label><select id="f-parent"></select></div>
-    <div class="field"><label data-i18n="fd_jump">Default jump host</label><select id="f-jump"></select></div>
-    <div class="field"><label data-i18n="fd_proxy">Default proxy</label><select id="f-proxy"></select></div>
+    <div class="field"><label data-i18n="name_lbl" for="f-name">Name</label><input type="text" id="f-name" placeholder="e.g. Production" onkeydown="if(event.key==='Enter') saveFolder()"></div>
+    <div class="field"><label data-i18n="fd_parent" for="f-parent">Parent folder</label><select id="f-parent"></select></div>
+    <div class="field"><label data-i18n="fd_jump" for="f-jump">Default jump host</label><select id="f-jump"></select></div>
+    <div class="field"><label data-i18n="fd_proxy" for="f-proxy">Default proxy</label><select id="f-proxy"></select></div>
     <div class="muted-text" style="line-height:1.5;" data-i18n="fd_help">Connections in this folder, also new ones, use these unless they choose their own jump host or proxy.</div>
     <div class="modal-footer">
       <button class="btn-sec" onclick="closeModal('modal-folder')" data-i18n="cancel">Cancel</button>
@@ -2106,7 +2106,7 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
 <div class="modal-overlay" id="modal-move">
   <div class="modal" style="width:min(480px, calc(100vw - 24px));">
     <h3 id="mv-title">Move</h3>
-    <div class="field"><label data-i18n="destination">Destination folder</label><select id="mv-folder"></select></div>
+    <div class="field"><label data-i18n="destination" for="mv-folder">Destination folder</label><select id="mv-folder"></select></div>
     <div class="modal-footer">
       <button class="btn-sec" onclick="closeModal('modal-move')" data-i18n="cancel">Cancel</button>
       <button id="mv-save" onclick="saveMove()" data-i18n="move_to_folder">Move</button>
@@ -2119,7 +2119,7 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
   <div class="modal">
     <h3 id="share-modal-title">🤝 Share</h3>
     <input type="hidden" id="share-edit-id">
-    <div class="field"><label data-i18n="share_name">Share name</label><input type="text" id="share-name" maxlength="120" placeholder="e.g. Production servers"></div>
+    <div class="field"><label data-i18n="share_name" for="share-name">Share name</label><input type="text" id="share-name" maxlength="120" placeholder="e.g. Production servers"></div>
     <div class="field">
       <label data-i18n="share_what">Connections in this share</label>
       <div class="conn-check-list" id="share-conn-list"></div>
@@ -2154,11 +2154,11 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
     </div>
     <div id="share-others-block">
       <div class="field">
-        <label data-i18n="others_role">Role for everyone else who opens the link</label>
+        <label data-i18n="others_role" for="share-guest-role">Role for everyone else who opens the link</label>
         <select id="share-guest-role"></select>
       </div>
       <div class="field">
-        <label data-i18n="share_pass">Password (optional)</label>
+        <label data-i18n="share_pass" for="share-pass">Password (optional)</label>
         <input type="password" id="share-pass" autocomplete="new-password" placeholder="">
         <label id="share-pass-clear-wrap" style="display:none;align-items:center;gap:6px;margin-top:6px;text-transform:none;letter-spacing:0;font-size:11.5px;font-weight:400;color:var(--text2);"><input type="checkbox" id="share-pass-clear" style="width:auto;"> <span data-i18n="remove_password">Remove the password</span></label>
       </div>
@@ -2166,7 +2166,7 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
     </div>
     <div class="field-row">
       <div class="field">
-        <label data-i18n="expires">Expires</label>
+        <label data-i18n="expires" for="share-expiry">Expires</label>
         <select id="share-expiry" onchange="onShareExpiryChange()">
           <option value="" data-i18n="never">Never</option>
           <option value="1h">1 h</option><option value="8h">8 h</option><option value="1d">1 d</option><option value="7d">7 d</option><option value="30d">30 d</option>
@@ -2174,7 +2174,7 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
           <option value="keep" id="share-expiry-keep" hidden></option>
         </select>
       </div>
-      <div class="field" id="share-expiry-custom-wrap" style="display:none;"><label data-i18n="expires_at">Expires at</label><input type="datetime-local" id="share-expiry-custom"></div>
+      <div class="field" id="share-expiry-custom-wrap" style="display:none;"><label data-i18n="expires_at" for="share-expiry-custom">Expires at</label><input type="datetime-local" id="share-expiry-custom"></div>
     </div>
     <details class="help"><summary data-i18n="roles_help">What can each role do?</summary><div id="role-matrix-box"></div></details>
     <div class="modal-footer">
@@ -2240,7 +2240,7 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
   <div class="modal" style="width:320px;">
     <h3>🔒 Password Protected Share</h3>
     <p style="font-size:11px;color:var(--text2);margin-bottom:16px;">This shared workspace is password protected.</p>
-    <div class="field"><label>Password</label><input type="password" id="share-unlock-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter') unlockShare()"></div>
+    <div class="field"><label for="share-unlock-pass">Password</label><input type="password" id="share-unlock-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter') unlockShare()"></div>
     <div class="modal-footer">
       <button onclick="unlockShare()">Unlock</button>
     </div>
@@ -2365,15 +2365,15 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
     <h3 id="snip-modal-title">⚡ Snippet</h3>
     <input type="hidden" id="sn-id">
     <div class="field-row">
-      <div class="field"><label data-i18n="name_lbl">Name</label><input type="text" id="sn-name" maxlength="120" placeholder="Disk usage"></div>
-      <div class="field"><label data-i18n="snip_group">Group</label><input type="text" id="sn-group" list="sn-groups" maxlength="60" placeholder="Diagnostics"><datalist id="sn-groups"></datalist></div>
+      <div class="field"><label data-i18n="name_lbl" for="sn-name">Name</label><input type="text" id="sn-name" maxlength="120" placeholder="Disk usage"></div>
+      <div class="field"><label data-i18n="snip_group" for="sn-group">Group</label><input type="text" id="sn-group" list="sn-groups" maxlength="60" placeholder="Diagnostics"><datalist id="sn-groups"></datalist></div>
     </div>
-    <div class="field"><label data-i18n="snip_command">Command(s)</label><textarea id="sn-cmd" rows="6" spellcheck="false" autocomplete="off" placeholder="df -hT -x tmpfs"></textarea>
+    <div class="field"><label data-i18n="snip_command" for="sn-cmd">Command(s)</label><textarea id="sn-cmd" rows="6" spellcheck="false" autocomplete="off" placeholder="df -hT -x tmpfs"></textarea>
       <div class="muted-text" style="margin-top:5px;line-height:1.5;" data-i18n="snip_vars_help">Every line is one command. Variables: {{host}} {{port}} {{user}} {{name}} {{folder}} {{wrm_user}} {{date}} {{time}}. Asked when used: {{?Service}} or {{?Service=nginx}}.</div></div>
-    <div class="field"><label data-i18n="snip_desc">Description (optional)</label><input type="text" id="sn-desc" maxlength="1000"></div>
+    <div class="field"><label data-i18n="snip_desc" for="sn-desc">Description (optional)</label><input type="text" id="sn-desc" maxlength="1000"></div>
     <div class="field-row">
-      <div class="field"><label data-i18n="snip_applies">Applies to</label><select id="sn-scope" onchange="onSnipScopeChange()"><option value="all" data-i18n="snip_scope_all">All connections</option><option value="folder" data-i18n="snip_scope_folder">Connections in a folder</option><option value="connection" data-i18n="snip_scope_conn">One connection</option></select></div>
-      <div class="field" id="sn-scope-id-wrap"><label id="sn-scope-id-lbl">Folder</label><select id="sn-scope-id"></select></div>
+      <div class="field"><label data-i18n="snip_applies" for="sn-scope">Applies to</label><select id="sn-scope" onchange="onSnipScopeChange()"><option value="all" data-i18n="snip_scope_all">All connections</option><option value="folder" data-i18n="snip_scope_folder">Connections in a folder</option><option value="connection" data-i18n="snip_scope_conn">One connection</option></select></div>
+      <div class="field" id="sn-scope-id-wrap"><label id="sn-scope-id-lbl" for="sn-scope-id">Folder</label><select id="sn-scope-id"></select></div>
     </div>
     <label class="check-row"><input type="checkbox" id="sn-auto" onchange="onSnipFlagsChange()"> <span><b data-i18n="snip_autorun">Run on connect</b> — <span data-i18n="snip_autorun_d">typed into the shell automatically when a terminal of these connections connects (also after a reconnect), e.g. sudo -i, cd /srv/app, tmux attach.</span></span></label>
     <label class="check-row" id="sn-shared-row"><input type="checkbox" id="sn-shared" onchange="onSnipFlagsChange()"> <span><b data-i18n="snip_shared">Share with all users</b> — <span data-i18n="snip_shared_d">everybody can use it (read-only). Shared snippets apply to all connections and do not run on connect.</span></span></label>
@@ -2391,22 +2391,22 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
     <h3 id="bm-modal-title">★</h3>
     <input type="hidden" id="bm-id">
     <div class="field-row">
-      <div class="field"><label data-i18n="name_lbl">Name</label><input type="text" id="bm-name" maxlength="120" placeholder="downloads"></div>
-      <div class="field" style="max-width:150px;"><label data-i18n="bm_color">Colour</label><select id="bm-color">
+      <div class="field"><label data-i18n="name_lbl" for="bm-name">Name</label><input type="text" id="bm-name" maxlength="120" placeholder="downloads"></div>
+      <div class="field" style="max-width:150px;"><label data-i18n="bm_color" for="bm-color">Colour</label><select id="bm-color">
         <option value="">—</option><option value="#3b82f6">🔵</option><option value="#22c55e">🟢</option><option value="#eab308">🟡</option>
         <option value="#f97316">🟠</option><option value="#ef4444">🔴</option><option value="#a855f7">🟣</option><option value="#94a3b8">⚪</option></select></div>
     </div>
-    <div class="field"><label data-i18n="bm_path">Directory</label><input type="text" id="bm-path" maxlength="1024" spellcheck="false" autocomplete="off" placeholder="/opt/app/servers/{name}/downloads">
+    <div class="field"><label data-i18n="bm_path" for="bm-path">Directory</label><input type="text" id="bm-path" maxlength="1024" spellcheck="false" autocomplete="off" placeholder="/opt/app/servers/{name}/downloads">
       <div class="muted-text" style="margin-top:5px;line-height:1.5;" data-i18n="bm_vars_help">Variables: ~ (home directory), $USER or {user} (the connection's user), {host}, {name} (connection name) — e.g. /opt/app/servers/{name}/downloads</div></div>
     <div class="field-row">
-      <div class="field"><label data-i18n="bm_scope">Offered on</label><select id="bm-scope" onchange="onBmScopeChange()">
+      <div class="field"><label data-i18n="bm_scope" for="bm-scope">Offered on</label><select id="bm-scope" onchange="onBmScopeChange()">
         <option value="connection" data-i18n="bm_scope_connection">One connection</option>
         <option value="folder" data-i18n="bm_scope_folder">Connections in a folder</option>
         <option value="tag" data-i18n="bm_scope_tag">Connections with a tag</option>
         <option value="global" data-i18n="bm_scope_global">All SSH / SFTP / FTP connections (global)</option></select></div>
-      <div class="field" id="bm-target-wrap"><label id="bm-target-lbl">—</label><select id="bm-target"></select><input type="text" id="bm-tag" list="bm-tags" maxlength="64" style="display:none;" placeholder="env:prod"><datalist id="bm-tags"></datalist></div>
+      <div class="field" id="bm-target-wrap"><label id="bm-target-lbl" for="bm-target">—</label><select id="bm-target"></select><input type="text" id="bm-tag" list="bm-tags" maxlength="64" style="display:none;" placeholder="env:prod"><datalist id="bm-tags"></datalist></div>
     </div>
-    <div class="field"><label data-i18n="bm_note">Note (optional)</label><input type="text" id="bm-note" maxlength="1000"></div>
+    <div class="field"><label data-i18n="bm_note" for="bm-note">Note (optional)</label><input type="text" id="bm-note" maxlength="1000"></div>
     <label class="check-row"><input type="checkbox" id="bm-start"> <span><b data-i18n="bm_start">Start directory</b> — <span data-i18n="bm_start_d">the file manager opens here and a terminal runs cd here when it connects (before the run-on-connect snippets). The most specific one wins: connection, tag, folder, global.</span></span></label>
     <label class="check-row" id="bm-shared-row"><input type="checkbox" id="bm-shared"> <span><b data-i18n="bm_shared">Share with share members</b> — <span data-i18n="bm_shared_d">people who use your connections through a share see this bookmark (read-only). Global bookmarks only.</span></span></label>
     <div class="modal-footer">
@@ -2453,13 +2453,13 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
   <div class="modal" style="width:min(520px, calc(100vw - 24px));">
     <h3>⚡ <span data-i18n="quick_title">Quick connect</span></h3>
     <div class="muted-text" style="line-height:1.5;" data-i18n="quick_help">Connect without saving: user@host:port, or ssh://, sftp://, rdp://, vnc://, telnet://, https://. The connection stays under "Quick connections" for 24 hours after its last use; 💾 keeps it.</div>
-    <div class="field" style="margin-top:10px;"><label data-i18n="quick_target">Address</label><input type="text" id="qc-target" autocomplete="off" spellcheck="false" placeholder="root@10.0.0.5:22" onkeydown="if(event.key==='Enter'){event.preventDefault(); quickConnect();}"></div>
+    <div class="field" style="margin-top:10px;"><label data-i18n="quick_target" for="qc-target">Address</label><input type="text" id="qc-target" autocomplete="off" spellcheck="false" placeholder="root@10.0.0.5:22" onkeydown="if(event.key==='Enter'){event.preventDefault(); quickConnect();}"></div>
     <div class="field-row">
-      <div class="field"><label data-i18n="protocol">Protocol</label><select id="qc-proto"><option value="">auto (SSH)</option><option>SSH</option><option>SFTP</option><option>RDP</option><option>VNC</option><option>TELNET</option><option>HTTPS</option><option>HTTP</option></select></div>
-      <div class="field"><label data-i18n="inv_login">Login</label><select id="qc-auth" onchange="document.getElementById('qc-pass-f').style.display = this.value ? 'none' : ''"></select></div>
+      <div class="field"><label data-i18n="protocol" for="qc-proto">Protocol</label><select id="qc-proto"><option value="">auto (SSH)</option><option>SSH</option><option>SFTP</option><option>RDP</option><option>VNC</option><option>TELNET</option><option>HTTPS</option><option>HTTP</option></select></div>
+      <div class="field"><label data-i18n="inv_login" for="qc-auth">Login</label><select id="qc-auth" onchange="document.getElementById('qc-pass-f').style.display = this.value ? 'none' : ''"></select></div>
     </div>
-    <div class="field" id="qc-pass-f"><label data-i18n="password">Password</label><input type="password" id="qc-pass" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault(); quickConnect();}"></div>
-    <div class="field"><label data-i18n="jump_host">Jump host (connect via)</label><select id="qc-jump"></select></div>
+    <div class="field" id="qc-pass-f"><label data-i18n="password" for="qc-pass">Password</label><input type="password" id="qc-pass" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault(); quickConnect();}"></div>
+    <div class="field"><label data-i18n="jump_host" for="qc-jump">Jump host (connect via)</label><select id="qc-jump"></select></div>
     <div class="modal-footer">
       <button class="btn-sec" onclick="closeModal('modal-quick')" data-i18n="cancel">Cancel</button>
       <button onclick="quickConnect()">⚡ <span data-i18n="quick_connect">Connect</span></button>
@@ -2492,9 +2492,9 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
     </div>
     <div class="muted-text" id="tools-help" style="line-height:1.5;"></div>
     <div class="field-row" style="margin-top:10px;">
-      <div class="field"><label data-i18n="tools_from">From</label><select id="tools-source"></select></div>
-      <div class="field"><label id="tools-target-lbl" data-i18n="tools_target">Host</label><input type="text" id="tools-target" autocomplete="off" spellcheck="false" placeholder="10.0.0.5" onkeydown="if(event.key==='Enter'){event.preventDefault(); runTool();}"></div>
-      <div class="field" id="tools-ports-f"><label data-i18n="tools_ports_lbl">Ports</label><input type="text" id="tools-ports" autocomplete="off" placeholder="22, 80, 443, 3306, 5432, 8000-8010" onkeydown="if(event.key==='Enter'){event.preventDefault(); runTool();}"></div>
+      <div class="field"><label data-i18n="tools_from" for="tools-source">From</label><select id="tools-source"></select></div>
+      <div class="field"><label id="tools-target-lbl" data-i18n="tools_target" for="tools-target">Host</label><input type="text" id="tools-target" autocomplete="off" spellcheck="false" placeholder="10.0.0.5" onkeydown="if(event.key==='Enter'){event.preventDefault(); runTool();}"></div>
+      <div class="field" id="tools-ports-f"><label data-i18n="tools_ports_lbl" for="tools-ports">Ports</label><input type="text" id="tools-ports" autocomplete="off" placeholder="22, 80, 443, 3306, 5432, 8000-8010" onkeydown="if(event.key==='Enter'){event.preventDefault(); runTool();}"></div>
     </div>
     <div id="tools-result"></div>
     <div class="modal-footer">
@@ -2540,19 +2540,19 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
     <div class="tab-pane" id="inv-netbox">
       <div class="muted-text" style="line-height:1.5;" data-i18n="inv_nb_help">Devices and virtual machines from NetBox through its API (a read-only token is enough). Sites, racks, roles, tenants, platforms and NetBox tags become tags. Importing again updates the connections imported before.</div>
       <div class="field-row" style="margin-top:10px;">
-        <div class="field"><label data-i18n="inv_nb_url">NetBox address</label><input type="text" id="nb-url" placeholder="https://netbox.example.com"></div>
-        <div class="field"><label data-i18n="inv_nb_token">API token</label><input type="password" id="nb-token" autocomplete="off"></div>
+        <div class="field"><label data-i18n="inv_nb_url" for="nb-url">NetBox address</label><input type="text" id="nb-url" placeholder="https://netbox.example.com"></div>
+        <div class="field"><label data-i18n="inv_nb_token" for="nb-token">API token</label><input type="password" id="nb-token" autocomplete="off"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label data-i18n="inv_nb_site">Sites (slugs)</label><input type="text" id="nb-site" placeholder="zg1, st1"></div>
-        <div class="field"><label data-i18n="inv_nb_role">Roles</label><input type="text" id="nb-role" placeholder="server"></div>
-        <div class="field"><label data-i18n="inv_nb_tenant">Tenants</label><input type="text" id="nb-tenant"></div>
-        <div class="field"><label data-i18n="inv_nb_tag">NetBox tag</label><input type="text" id="nb-tag"></div>
+        <div class="field"><label data-i18n="inv_nb_site" for="nb-site">Sites (slugs)</label><input type="text" id="nb-site" placeholder="zg1, st1"></div>
+        <div class="field"><label data-i18n="inv_nb_role" for="nb-role">Roles</label><input type="text" id="nb-role" placeholder="server"></div>
+        <div class="field"><label data-i18n="inv_nb_tenant" for="nb-tenant">Tenants</label><input type="text" id="nb-tenant"></div>
+        <div class="field"><label data-i18n="inv_nb_tag" for="nb-tag">NetBox tag</label><input type="text" id="nb-tag"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label data-i18n="inv_nb_status">Status</label><select id="nb-status"><option value="active">active</option><option value="any" data-i18n="inv_nb_any">any</option><option value="planned">planned</option><option value="staged">staged</option><option value="offline">offline</option></select></div>
-        <div class="field"><label data-i18n="inv_nb_hostfrom">Address</label><select id="nb-hostfrom"><option value="ip" data-i18n="inv_nb_ip">primary IP</option><option value="name" data-i18n="inv_nb_dns">name (DNS)</option></select></div>
-        <div class="field"><label data-i18n="inv_nb_env">Environment custom field</label><input type="text" id="nb-env" placeholder="environment"></div>
+        <div class="field"><label data-i18n="inv_nb_status" for="nb-status">Status</label><select id="nb-status"><option value="active">active</option><option value="any" data-i18n="inv_nb_any">any</option><option value="planned">planned</option><option value="staged">staged</option><option value="offline">offline</option></select></div>
+        <div class="field"><label data-i18n="inv_nb_hostfrom" for="nb-hostfrom">Address</label><select id="nb-hostfrom"><option value="ip" data-i18n="inv_nb_ip">primary IP</option><option value="name" data-i18n="inv_nb_dns">name (DNS)</option></select></div>
+        <div class="field"><label data-i18n="inv_nb_env" for="nb-env">Environment custom field</label><input type="text" id="nb-env" placeholder="environment"></div>
       </div>
       <div class="vault-tools">
         <label class="check-row" style="margin:0;"><input type="checkbox" id="nb-devices" checked> <span data-i18n="inv_nb_devices">Devices</span></label>
@@ -2566,15 +2566,15 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
     <details class="inv-opts" id="inv-opts" open>
       <summary>⚙ <span data-i18n="inv_opts">Login, folders and tags of the imported connections</span></summary>
       <div class="field-row" style="margin-top:6px;">
-        <div class="field"><label data-i18n="inv_login">Login</label><select id="inv-auth"></select></div>
-        <div class="field"><label data-i18n="username">Username</label><input type="text" id="inv-user" placeholder="root"></div>
-        <div class="field"><label data-i18n="inv_proto">Protocol (if not in the file)</label><select id="inv-proto"><option>SSH</option><option>SFTP</option><option>RDP</option><option>VNC</option><option>TELNET</option><option>HTTPS</option></select></div>
+        <div class="field"><label data-i18n="inv_login" for="inv-auth">Login</label><select id="inv-auth"></select></div>
+        <div class="field"><label data-i18n="username" for="inv-user">Username</label><input type="text" id="inv-user" placeholder="root"></div>
+        <div class="field"><label data-i18n="inv_proto" for="inv-proto">Protocol (if not in the file)</label><select id="inv-proto"><option>SSH</option><option>SFTP</option><option>RDP</option><option>VNC</option><option>TELNET</option><option>HTTPS</option></select></div>
       </div>
       <div class="field-row">
-        <div class="field"><label data-i18n="inv_folders">Folders</label><select id="inv-folder-mode" onchange="document.getElementById('inv-folder').style.display = this.value === 'fixed' ? '' : 'none'">
+        <div class="field"><label data-i18n="inv_folders" for="inv-folder-mode">Folders</label><select id="inv-folder-mode" onchange="document.getElementById('inv-folder').style.display = this.value === 'fixed' ? '' : 'none'">
           <option value="column" data-i18n="inv_f_column">from the folder column</option><option value="site" data-i18n="inv_f_site">one per site</option><option value="role" data-i18n="inv_f_role">one per role</option><option value="tenant" data-i18n="inv_f_tenant">one per tenant (NetBox)</option><option value="fixed" data-i18n="inv_f_fixed">all in one folder</option><option value="none" data-i18n="inv_f_none">no folder</option></select>
           <input type="text" id="inv-folder" style="display:none;margin-top:6px;" placeholder="Imported"></div>
-        <div class="field"><label data-i18n="inv_tags">Extra tags for all</label><input type="text" id="inv-tags" placeholder="imported"></div>
+        <div class="field"><label data-i18n="inv_tags" for="inv-tags">Extra tags for all</label><input type="text" id="inv-tags" placeholder="imported"></div>
       </div>
       <div class="muted-text" style="line-height:1.5;" data-i18n="inv_login_help">Rows with a password column keep their own password. Connections that already exist (same name, host and protocol) are skipped; NetBox objects imported before are updated when "update" is on.</div>
     </details>
@@ -2623,19 +2623,19 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
 <div class="modal-overlay" id="modal-keynew" style="z-index:9500;">
   <div class="modal" style="width:min(560px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow-y: auto;">
     <h3 id="kn-title">🔑</h3>
-    <div class="field"><label data-i18n="name_lbl">Name</label><input type="text" id="kn-name" maxlength="120" placeholder="ops-2026"></div>
+    <div class="field"><label data-i18n="name_lbl" for="kn-name">Name</label><input type="text" id="kn-name" maxlength="120" placeholder="ops-2026"></div>
     <div id="kn-gen">
       <div class="field-row">
-        <div class="field"><label data-i18n="vk_type">Type</label><select id="kn-type"><option value="ed25519">ED25519 (recommended)</option><option value="rsa:4096">RSA 4096</option><option value="rsa:3072">RSA 3072</option><option value="rsa:2048">RSA 2048</option><option value="ecdsa:256">ECDSA P-256</option><option value="ecdsa:384">ECDSA P-384</option><option value="ecdsa:521">ECDSA P-521</option></select></div>
-        <div class="field"><label data-i18n="vk_comment">Comment</label><input type="text" id="kn-comment" maxlength="100" placeholder="me@wrm"></div>
+        <div class="field"><label data-i18n="vk_type" for="kn-type">Type</label><select id="kn-type"><option value="ed25519">ED25519 (recommended)</option><option value="rsa:4096">RSA 4096</option><option value="rsa:3072">RSA 3072</option><option value="rsa:2048">RSA 2048</option><option value="ecdsa:256">ECDSA P-256</option><option value="ecdsa:384">ECDSA P-384</option><option value="ecdsa:521">ECDSA P-521</option></select></div>
+        <div class="field"><label data-i18n="vk_comment" for="kn-comment">Comment</label><input type="text" id="kn-comment" maxlength="100" placeholder="me@wrm"></div>
       </div>
       <div class="muted-text" style="line-height:1.5;" data-i18n="vk_gen_help">The key is created on the WRM server and stored encrypted; the private key leaves it only if you export it. ED25519 is short and fast; use RSA only for old servers. RSA keys take a few seconds.</div>
     </div>
     <div id="kn-imp">
-      <div class="field"><label data-i18n="vk_paste">Private key or public key</label><textarea id="kn-key" rows="7" spellcheck="false" autocomplete="off" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;…&#10;ssh-ed25519 AAAA… alice@laptop"></textarea>
+      <div class="field"><label data-i18n="vk_paste" for="kn-key">Private key or public key</label><textarea id="kn-key" rows="7" spellcheck="false" autocomplete="off" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;…&#10;ssh-ed25519 AAAA… alice@laptop"></textarea>
         <div class="muted-text" style="margin-top:5px;line-height:1.5;" data-i18n="vk_paste_help">OpenSSH or PEM private keys (ED25519, RSA, ECDSA). A public key alone (e.g. a colleague's) can be put on servers, but WRM cannot log in with it. PuTTY .ppk: export it with PuTTYgen → Conversions → Export OpenSSH key first.</div></div>
       <div class="field"><input type="file" id="kn-file" onchange="keyFileChosen(this)" style="font-size:11px;"></div>
-      <div class="field" id="kn-pp-wrap" style="display:none;"><label data-i18n="vk_passphrase">Passphrase of the key</label><input type="password" id="kn-pp" autocomplete="off" onkeydown="if(event.key==='Enter') saveNewKey()">
+      <div class="field" id="kn-pp-wrap" style="display:none;"><label data-i18n="vk_passphrase" for="kn-pp">Passphrase of the key</label><input type="password" id="kn-pp" autocomplete="off" onkeydown="if(event.key==='Enter') saveNewKey()">
         <div class="muted-text" style="margin-top:5px;" data-i18n="vk_passphrase_help">Used once to read the key; WRM stores it encrypted with its own key.</div></div>
     </div>
     <div class="modal-footer">
@@ -2649,7 +2649,7 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
   <div class="modal" style="width:min(640px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow-y: auto;">
     <h3 id="kd-title">🚀</h3>
     <div class="muted-text" id="kd-help" style="line-height:1.5;"></div>
-    <div class="field" style="margin-top:10px;"><label data-i18n="vk_key">SSH key</label><select id="kd-key" onchange="renderKeyDeployList(true)"></select></div>
+    <div class="field" style="margin-top:10px;"><label data-i18n="vk_key" for="kd-key">SSH key</label><select id="kd-key" onchange="renderKeyDeployList(true)"></select></div>
     <div class="vault-tools"><input type="text" class="search-box" id="kd-filter" autocomplete="off" data-i18n-placeholder="filter_ph" placeholder="Filter…" oninput="renderKeyDeployList()"><button class="btn-sec btn-sm" onclick="kdSelect(true)" data-i18n="bc_all">All</button><button class="btn-sec btn-sm" onclick="kdSelect(false)" data-i18n="bc_none">None</button></div>
     <div class="kd-list" id="kd-list"></div>
     <label class="check-row" id="kd-switch-row"><input type="checkbox" id="kd-switch" checked> <span><b data-i18n="vk_switch">Log in with this key from now on</b> — <span data-i18n="vk_switch_d">after adding the key, WRM logs in with it to test it and then switches these connections to it.</span></span></label>
@@ -2679,19 +2679,19 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
     <h3 id="cr-title">🗝</h3>
     <input type="hidden" id="cr-id">
     <div class="field-row">
-      <div class="field"><label data-i18n="name_lbl">Name</label><input type="text" id="cr-name" maxlength="120" placeholder="root@dc1"></div>
-      <div class="field"><label data-i18n="username">Username</label><input type="text" id="cr-user" maxlength="120" placeholder="root"></div>
+      <div class="field"><label data-i18n="name_lbl" for="cr-name">Name</label><input type="text" id="cr-name" maxlength="120" placeholder="root@dc1"></div>
+      <div class="field"><label data-i18n="username" for="cr-user">Username</label><input type="text" id="cr-user" maxlength="120" placeholder="root"></div>
     </div>
     <div class="field"><label data-i18n="password">Password</label>
       <div class="pw-row"><input type="password" id="cr-pass" autocomplete="new-password"><button class="btn-sec btn-sm" type="button" onclick="crGenPassword()" title="Generate">🎲</button><button class="btn-sec btn-sm" type="button" onclick="crTogglePw()" title="Show">👁</button></div>
       <div class="muted-text" id="cr-pass-note" style="display:none;margin-top:5px;">🔒 <span data-i18n="secret_stored">Saved and encrypted — leave empty to keep it.</span></div></div>
-    <div class="field"><label data-i18n="vc_key">SSH key (optional)</label><select id="cr-key"></select>
+    <div class="field"><label data-i18n="vc_key" for="cr-key">SSH key (optional)</label><select id="cr-key"></select>
       <div class="muted-text" style="margin-top:5px;line-height:1.5;" data-i18n="vc_key_help">With a key, connections log in with the key. A password stored as well can still be checked and rotated.</div></div>
-    <div class="field"><label data-i18n="vc_hosts">Only for hosts (optional)</label><input type="text" id="cr-hosts" maxlength="2000" placeholder="*.dc1.example.com, 10.1.0.0/16">
+    <div class="field"><label data-i18n="vc_hosts" for="cr-hosts">Only for hosts (optional)</label><input type="text" id="cr-hosts" maxlength="2000" placeholder="*.dc1.example.com, 10.1.0.0/16">
       <div class="muted-text" style="margin-top:5px;line-height:1.5;" data-i18n="vc_hosts_help">Host names with * and ?, or CIDR ranges. The credential then works only for matching hosts. Recommended for shared credentials: a password is sent to the server when logging in, so it cannot be used to log in to a server somebody else controls.</div></div>
     <div class="field-row">
-      <div class="field"><label data-i18n="vc_rotate_days">Rotation reminder (days)</label><input type="number" id="cr-rot" min="0" max="3650" placeholder="0"></div>
-      <div class="field"><label data-i18n="vc_desc">Description</label><input type="text" id="cr-desc" maxlength="2000"></div>
+      <div class="field"><label data-i18n="vc_rotate_days" for="cr-rot">Rotation reminder (days)</label><input type="number" id="cr-rot" min="0" max="3650" placeholder="0"></div>
+      <div class="field"><label data-i18n="vc_desc" for="cr-desc">Description</label><input type="text" id="cr-desc" maxlength="2000"></div>
     </div>
     <div class="field"><label data-i18n="vc_grants">Share with users</label>
       <div class="pw-row"><input type="text" id="cr-grant-q" list="cr-grant-users" autocomplete="off" data-i18n-placeholder="vc_grant_ph" placeholder="User name…" oninput="crGrantSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault(); crGrantAdd();}"><button class="btn-sec btn-sm" type="button" onclick="crGrantAdd()">＋</button></div>
@@ -2712,28 +2712,28 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
     <h3 id="px-title">🌐</h3>
     <input type="hidden" id="px-id">
     <div class="field-row">
-      <div class="field"><label data-i18n="name_lbl">Name</label><input type="text" id="px-name" maxlength="120" placeholder="dc1-socks"></div>
-      <div class="field"><label data-i18n="vp_kind">Type</label><select id="px-kind" onchange="onProxyKind()">
+      <div class="field"><label data-i18n="name_lbl" for="px-name">Name</label><input type="text" id="px-name" maxlength="120" placeholder="dc1-socks"></div>
+      <div class="field"><label data-i18n="vp_kind" for="px-kind">Type</label><select id="px-kind" onchange="onProxyKind()">
         <option value="socks5">SOCKS5</option><option value="socks4">SOCKS4 / SOCKS4a</option><option value="http">HTTP CONNECT</option>
         <option value="wrm_tunnel" data-i18n="vp_kind_tunnel">WRM SOCKS tunnel of a connection</option></select></div>
     </div>
     <div id="px-net">
       <div class="field-row">
-        <div class="field"><label data-i18n="host">Host</label><input type="text" id="px-host" placeholder="10.1.1.1" oninput="onProxyKind()"></div>
-        <div class="field" style="max-width:120px;"><label data-i18n="vp_port">Port</label><input type="number" id="px-port" min="1" max="65535" placeholder="1080"></div>
+        <div class="field"><label data-i18n="host" for="px-host">Host</label><input type="text" id="px-host" placeholder="10.1.1.1" oninput="onProxyKind()"></div>
+        <div class="field" style="max-width:120px;"><label data-i18n="vp_port" for="px-port">Port</label><input type="number" id="px-port" min="1" max="65535" placeholder="1080"></div>
       </div>
       <div class="hint-box warn" id="px-docker" style="display:none;" data-i18n="vp_docker_warn">WRM runs in a container: 127.0.0.1 is the container itself, not the Docker host. For a proxy on the host use host.docker.internal (docker-compose.yml maps it to the host).</div>
-      <div class="field"><label data-i18n="vp_login">Login</label><select id="px-login" onchange="onProxyKind()"></select></div>
+      <div class="field"><label data-i18n="vp_login" for="px-login">Login</label><select id="px-login" onchange="onProxyKind()"></select></div>
       <div class="field-row" id="px-own">
-        <div class="field"><label data-i18n="username">Username</label><input type="text" id="px-user" autocomplete="off"></div>
-        <div class="field" id="px-pass-f"><label data-i18n="password">Password</label><input type="password" id="px-pass" autocomplete="new-password">
+        <div class="field"><label data-i18n="username" for="px-user">Username</label><input type="text" id="px-user" autocomplete="off"></div>
+        <div class="field" id="px-pass-f"><label data-i18n="password" for="px-pass">Password</label><input type="password" id="px-pass" autocomplete="new-password">
           <div class="muted-text" id="px-pass-note" style="display:none;margin-top:5px;">🔒 <span data-i18n="secret_stored">Saved and encrypted — leave empty to keep it.</span></div></div>
       </div>
       <label class="check-row"><input type="checkbox" id="px-dns" checked> <span><b data-i18n="vp_dns">DNS at the proxy</b> — <span data-i18n="vp_dns_d">the proxy resolves host names (SOCKS5 domain names, SOCKS4a). Off: WRM resolves them and sends the address.</span></span></label>
     </div>
-    <div class="field" id="px-tun-f"><label data-i18n="vp_tunnel">SOCKS tunnel (-D)</label><select id="px-tunnel"></select>
+    <div class="field" id="px-tun-f"><label data-i18n="vp_tunnel" for="px-tunnel">SOCKS tunnel (-D)</label><select id="px-tunnel"></select>
       <div class="muted-text" style="margin-top:5px;line-height:1.5;" data-i18n="vp_tunnel_help">A dynamic tunnel of one of your SSH connections. WRM starts it when a connection needs the proxy and stops it after 30 minutes without traffic. Add one under the connection's SSH tunnels → SOCKS proxy (-D).</div></div>
-    <div class="field"><label data-i18n="vc_desc">Description</label><input type="text" id="px-desc" maxlength="2000"></div>
+    <div class="field"><label data-i18n="vc_desc" for="px-desc">Description</label><input type="text" id="px-desc" maxlength="2000"></div>
     <div id="px-share">
       <div class="field"><label data-i18n="vc_grants">Share with users</label>
         <div class="pw-row"><input type="text" id="px-grant-q" list="cr-grant-users" autocomplete="off" data-i18n-placeholder="vc_grant_ph" placeholder="User name…" oninput="crGrantSearch('px-grant-q')" onkeydown="if(event.key==='Enter'){event.preventDefault(); pxGrantAdd();}"><button class="btn-sec btn-sm" type="button" onclick="pxGrantAdd()">＋</button></div>
@@ -2756,7 +2756,7 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
   <div class="modal" style="width:min(640px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow-y: auto;">
     <h3>🔄 <span id="rot-title"></span></h3>
     <div class="muted-text" style="line-height:1.5;" data-i18n="rot_help">Check logs in to every SSH server that uses this credential with the stored password and changes nothing. Rotate does the same check first, then runs passwd on each server, logs in with the new password and stores it. If a server fails, the servers already changed get the old password back.</div>
-    <div class="field" style="margin-top:10px;"><label data-i18n="rot_new">New password</label>
+    <div class="field" style="margin-top:10px;"><label data-i18n="rot_new" for="rot-mode">New password</label>
       <select id="rot-mode" onchange="document.getElementById('rot-own').style.display = this.value === 'own' ? '' : 'none'"><option value="gen" data-i18n="rot_gen">Generate a strong password (24 characters)</option><option value="own" data-i18n="rot_own">Enter my own</option></select>
       <input type="password" id="rot-own" style="display:none;margin-top:6px;" autocomplete="new-password">
     </div>
@@ -2824,8 +2824,8 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
     <h3>🔔 <span id="nc-title"></span></h3>
     <input type="hidden" id="nc-id">
     <div class="field-row">
-      <div class="field"><label data-i18n="name_lbl">Name</label><input type="text" id="nc-name" maxlength="120" placeholder="Ops e-mail"></div>
-      <div class="field"><label data-i18n="nf_kind">Type</label><select id="nc-kind" onchange="renderNotifyChannelFields()"></select></div>
+      <div class="field"><label data-i18n="name_lbl" for="nc-name">Name</label><input type="text" id="nc-name" maxlength="120" placeholder="Ops e-mail"></div>
+      <div class="field"><label data-i18n="nf_kind" for="nc-kind">Type</label><select id="nc-kind" onchange="renderNotifyChannelFields()"></select></div>
     </div>
     <div class="muted-text" id="nc-help" style="line-height:1.5;margin-bottom:8px;"></div>
     <div id="nc-fields"></div>
@@ -2870,9 +2870,9 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
   <div class="modal" style="width:400px;">
     <h3>🔑 <span data-i18n="change_password">Change password</span></h3>
     <div class="auth-note" id="pw-forced-note" style="display:none;" data-i18n="pw_forced_note">An administrator reset your password. Choose a new one to continue.</div>
-    <div class="field"><label data-i18n="current_password">Current password</label><input type="password" id="pw-current" autocomplete="current-password"></div>
-    <div class="field"><label data-i18n="new_password">New password</label><input type="password" id="pw-new" autocomplete="new-password"><div class="muted-text" id="pw-hint" style="margin-top:4px;"></div></div>
-    <div class="field"><label data-i18n="repeat_password">Repeat new password</label><input type="password" id="pw-new2" autocomplete="new-password" onkeydown="if(event.key==='Enter') submitPasswordChange()"></div>
+    <div class="field"><label data-i18n="current_password" for="pw-current">Current password</label><input type="password" id="pw-current" autocomplete="current-password"></div>
+    <div class="field"><label data-i18n="new_password" for="pw-new">New password</label><input type="password" id="pw-new" autocomplete="new-password"><div class="muted-text" id="pw-hint" style="margin-top:4px;"></div></div>
+    <div class="field"><label data-i18n="repeat_password" for="pw-new2">Repeat new password</label><input type="password" id="pw-new2" autocomplete="new-password" onkeydown="if(event.key==='Enter') submitPasswordChange()"></div>
     <div class="modal-footer">
       <button class="btn-sec" id="pw-cancel" onclick="closeModal('modal-password')" data-i18n="cancel">Cancel</button>
       <button class="btn-sec" id="pw-logout" style="display:none;" onclick="doLogout()" data-i18n="sign_out">Sign out</button>
@@ -2903,15 +2903,15 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
 <div class="modal-overlay" id="modal-user-new" style="z-index:9150;">
   <div class="modal" style="width:420px;">
     <h3>👤 <span data-i18n="new_user">New user</span></h3>
-    <div class="field"><label data-i18n="username">Username</label><input type="text" id="nu-username" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
-    <div class="field"><label data-i18n="display_name">Display name (optional)</label><input type="text" id="nu-display" maxlength="80"></div>
-    <div class="field"><label data-i18n="password">Password</label><input type="password" id="nu-password" autocomplete="new-password" placeholder=""><div class="muted-text" style="margin-top:4px;" data-i18n="nu_pw_hint">Leave empty to generate a secure temporary password.</div></div>
+    <div class="field"><label data-i18n="username" for="nu-username">Username</label><input type="text" id="nu-username" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+    <div class="field"><label data-i18n="display_name" for="nu-display">Display name (optional)</label><input type="text" id="nu-display" maxlength="80"></div>
+    <div class="field"><label data-i18n="password" for="nu-password">Password</label><input type="password" id="nu-password" autocomplete="new-password" placeholder=""><div class="muted-text" style="margin-top:4px;" data-i18n="nu_pw_hint">Leave empty to generate a secure temporary password.</div></div>
     <div class="field field-check"><input type="checkbox" id="nu-must-change" checked><label for="nu-must-change" style="margin:0;text-transform:none;letter-spacing:0;font-size:12px;font-weight:400;color:var(--text);" data-i18n="must_change_pw">Must change the password at first sign-in</label></div>
-    <div class="field"><label data-i18n="role_lbl">Role</label><select id="nu-role">
+    <div class="field"><label data-i18n="role_lbl" for="nu-role">Role</label><select id="nu-role">
       <option value="user" data-i18n="urole_user">User</option><option value="operator" data-i18n="urole_operator">Operator</option>
       <option value="auditor" data-i18n="urole_auditor">Security auditor</option><option value="admin" data-i18n="urole_admin">Administrator</option></select>
       <div class="muted-text" style="margin-top:4px;" id="nu-role-hint"></div></div>
-    <div class="field"><label data-i18n="rec_level_lbl">Session recording</label><select id="nu-record">
+    <div class="field"><label data-i18n="rec_level_lbl" for="nu-record">Session recording</label><select id="nu-record">
       <option value="" data-i18n="rec_level_default">As the server settings</option>
       <option value="none" data-i18n="rec_level_none">Off for this user</option>
       <option value="metadata" data-i18n="rec_level_meta">Session output only (no keystrokes)</option>
@@ -3008,8 +3008,8 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
     <h3>🛡 <span data-i18n="su_title">Confirm it is you</span></h3>
     <div class="muted-text" id="su-msg" style="margin-bottom:10px;"></div>
     <div id="su-sso"></div>
-    <div class="field" id="su-pw-wrap"><label data-i18n="password">Password</label><input type="password" id="su-password" autocomplete="current-password" onkeydown="if(event.key==='Enter'){event.preventDefault();stepUpSubmit();}"></div>
-    <div class="field" id="su-code-wrap"><label data-i18n="su_code">2FA code (or a recovery code)</label><input type="text" id="su-code" inputmode="numeric" autocomplete="one-time-code" onkeydown="if(event.key==='Enter'){event.preventDefault();stepUpSubmit();}"></div>
+    <div class="field" id="su-pw-wrap"><label data-i18n="password" for="su-password">Password</label><input type="password" id="su-password" autocomplete="current-password" onkeydown="if(event.key==='Enter'){event.preventDefault();stepUpSubmit();}"></div>
+    <div class="field" id="su-code-wrap"><label data-i18n="su_code" for="su-code">2FA code (or a recovery code)</label><input type="text" id="su-code" inputmode="numeric" autocomplete="one-time-code" onkeydown="if(event.key==='Enter'){event.preventDefault();stepUpSubmit();}"></div>
     <button class="btn-sec" id="su-passkey" style="display:none;width:100%;margin-bottom:8px;" onclick="stepUpWebAuthn()" data-i18n="webauthn_use">Use a passkey / security key</button>
     <div class="fm-error" id="su-error" style="display:none;"></div>
     <div class="modal-footer"><button class="btn-sec" onclick="stepUpDone(false)" data-i18n="cancel">Cancel</button><button id="su-submit" onclick="stepUpSubmit()" data-i18n="confirm">Confirm</button></div>
@@ -3021,9 +3021,9 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
   <div class="modal" style="width:460px;">
     <h3>🗑 <span id="ud-title"></span></h3>
     <div class="hint-box" id="ud-owned"></div>
-    <div class="field"><label data-i18n="ud_handover">What happens to the connections, folders, credentials, keys and shares</label><select id="ud-target"></select>
+    <div class="field"><label data-i18n="ud_handover" for="ud-target">What happens to the connections, folders, credentials, keys and shares</label><select id="ud-target"></select>
       <div class="muted-text" style="margin-top:4px;" id="ud-hint"></div></div>
-    <div class="field"><label id="ud-typed-lbl"></label><input type="text" id="ud-typed" autocomplete="off" spellcheck="false"></div>
+    <div class="field"><label id="ud-typed-lbl" for="ud-typed"></label><input type="text" id="ud-typed" autocomplete="off" spellcheck="false"></div>
     <div class="modal-footer"><button class="btn-sec" onclick="closeModal('modal-user-delete')" data-i18n="cancel">Cancel</button><button class="btn-danger" onclick="submitDeleteUser()" data-i18n="delete">Delete</button></div>
   </div>
 </div>
@@ -3033,9 +3033,9 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
   <div class="modal" style="width:520px;">
     <h3>👥 <span id="team-title"></span></h3>
     <input type="hidden" id="team-id">
-    <div class="field"><label data-i18n="team_name">Name</label><input type="text" id="team-name" maxlength="40" placeholder="ops"></div>
-    <div class="field"><label data-i18n="team_desc">Description (optional)</label><input type="text" id="team-desc" maxlength="300"></div>
-    <div class="field"><label data-i18n="team_members">Members</label>
+    <div class="field"><label data-i18n="team_name" for="team-name">Name</label><input type="text" id="team-name" maxlength="40" placeholder="ops"></div>
+    <div class="field"><label data-i18n="team_desc" for="team-desc">Description (optional)</label><input type="text" id="team-desc" maxlength="300"></div>
+    <div class="field"><label data-i18n="team_members" for="team-q">Members</label>
       <input type="text" id="team-q" placeholder="🔍" oninput="renderTeamMembersEditor()" style="margin-bottom:6px;">
       <div class="team-members-box" id="team-members-box"></div>
       <div class="muted-text" style="margin-top:4px;" data-i18n="team_lead_hint">A lead receives the connections of a member who leaves (suggested when the account is deleted).</div></div>
@@ -3049,19 +3049,19 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
     <h3>🏢 <span id="sso-title"></span></h3>
     <input type="hidden" id="sso-id">
     <div class="hint-box" id="sso-preset-hint"></div>
-    <div class="field"><label data-i18n="sso_f_name">Name on the sign-in button</label><input type="text" id="sso-name" maxlength="60" placeholder="Microsoft Entra ID"></div>
+    <div class="field"><label data-i18n="sso_f_name" for="sso-name">Name on the sign-in button</label><input type="text" id="sso-name" maxlength="60" placeholder="Microsoft Entra ID"></div>
     <div class="field"><label data-i18n="sso_f_issuer">Issuer</label>
       <div style="display:flex;gap:6px;"><input type="text" id="sso-issuer" maxlength="300" spellcheck="false" style="flex:1;min-width:0;"><button class="btn-sec btn-sm" onclick="ssoCheck()" data-i18n="sso_check">Test connection</button></div>
       <ul class="sso-steps" id="sso-check-out"></ul></div>
-    <div class="field"><label data-i18n="sso_f_client_id">Client ID (application ID)</label><input type="text" id="sso-client-id" maxlength="300" spellcheck="false" autocomplete="off"></div>
-    <div class="field"><label data-i18n="sso_f_secret">Client secret</label><input type="password" id="sso-secret" maxlength="300" autocomplete="new-password">
+    <div class="field"><label data-i18n="sso_f_client_id" for="sso-client-id">Client ID (application ID)</label><input type="text" id="sso-client-id" maxlength="300" spellcheck="false" autocomplete="off"></div>
+    <div class="field"><label data-i18n="sso_f_secret" for="sso-secret">Client secret</label><input type="password" id="sso-secret" maxlength="300" autocomplete="new-password">
       <div class="muted-text" style="margin-top:4px;" id="sso-secret-hint"></div></div>
     <div class="field"><label data-i18n="sso_f_redirect">Redirect address to register at the provider</label>
       <div style="display:flex;gap:6px;"><input type="text" id="sso-redirect" maxlength="300" spellcheck="false" style="flex:1;min-width:0;"><button class="btn-sec btn-sm" onclick="ssoCopyRedirect()" data-i18n="copy">Copy</button></div>
       <div class="muted-text" style="margin-top:4px;" data-i18n="sso_f_redirect_d">Leave empty to use the address shown. Set it when WRM is reached through another address (reverse proxy).</div></div>
-    <div class="field"><label data-i18n="sso_f_scopes">Scopes</label><input type="text" id="sso-scopes" maxlength="300" spellcheck="false">
+    <div class="field"><label data-i18n="sso_f_scopes" for="sso-scopes">Scopes</label><input type="text" id="sso-scopes" maxlength="300" spellcheck="false">
       <div class="muted-text" style="margin-top:4px;" data-i18n="sso_f_scopes_d">offline_access lets WRM check regularly that the user may still sign in.</div></div>
-    <div class="field"><label data-i18n="sso_f_username">Username from claim</label><input type="text" id="sso-username-claim" maxlength="60" spellcheck="false" placeholder="preferred_username"></div>
+    <div class="field"><label data-i18n="sso_f_username" for="sso-username-claim">Username from claim</label><input type="text" id="sso-username-claim" maxlength="60" spellcheck="false" placeholder="preferred_username"></div>
     <div class="adm-h" data-i18n="sso_rules">Who may sign in, and with which role</div>
     <div class="muted-text" style="margin-bottom:8px;" data-i18n="sso_rules_d">Each rule matches a value in the token (an app role in roles, a group ID in groups, or another claim). The strongest matched role wins; teams of all matched rules are added. Without rules only accounts linked by hand may sign in.</div>
     <div id="sso-rules"></div>
@@ -3090,22 +3090,22 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
     <h3>🗂 <span id="ldap-title"></span></h3>
     <input type="hidden" id="ldap-id">
     <div class="hint-box" id="ldap-hint"></div>
-    <div class="field"><label data-i18n="ldap_f_kind">Directory type</label><select id="ldap-kind" class="setting-select" onchange="ldapKindChanged()"><option value="ad" data-i18n="ldap_kind_ad">Active Directory</option><option value="ldap" data-i18n="ldap_kind_ldap">Other LDAP server (OpenLDAP, 389 DS, FreeIPA…)</option></select></div>
-    <div class="field"><label data-i18n="ldap_f_name">Name</label><input type="text" id="ldap-name" maxlength="60" placeholder="Active Directory"></div>
-    <div class="field"><label data-i18n="ldap_f_url">Server</label><input type="text" id="ldap-url" maxlength="300" spellcheck="false" placeholder="ldaps://dc1.example.com">
+    <div class="field"><label data-i18n="ldap_f_kind" for="ldap-kind">Directory type</label><select id="ldap-kind" class="setting-select" onchange="ldapKindChanged()"><option value="ad" data-i18n="ldap_kind_ad">Active Directory</option><option value="ldap" data-i18n="ldap_kind_ldap">Other LDAP server (OpenLDAP, 389 DS, FreeIPA…)</option></select></div>
+    <div class="field"><label data-i18n="ldap_f_name" for="ldap-name">Name</label><input type="text" id="ldap-name" maxlength="60" placeholder="Active Directory"></div>
+    <div class="field"><label data-i18n="ldap_f_url" for="ldap-url">Server</label><input type="text" id="ldap-url" maxlength="300" spellcheck="false" placeholder="ldaps://dc1.example.com">
       <div class="muted-text" style="margin-top:4px;" data-i18n="ldap_f_url_d">ldaps://host (port 636) or ldap://host (port 389, WRM then always uses StartTLS). WRM never sends passwords without encryption.</div></div>
-    <div class="field"><label data-i18n="ldap_f_ca">CA certificate (PEM, optional)</label><textarea id="ldap-ca" rows="3" spellcheck="false" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:11px;" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
+    <div class="field"><label data-i18n="ldap_f_ca" for="ldap-ca">CA certificate (PEM, optional)</label><textarea id="ldap-ca" rows="3" spellcheck="false" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:11px;" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
       <div class="muted-text" style="margin-top:4px;" data-i18n="ldap_f_ca_d">Needed when the directory's certificate comes from your own CA (common for domain controllers). Use the host name the certificate is issued to.</div></div>
-    <div class="field"><label data-i18n="ldap_f_bind_dn">Service account (bind DN)</label><input type="text" id="ldap-bind-dn" maxlength="500" spellcheck="false" autocomplete="off" placeholder="CN=svc-wrm,OU=Service,DC=example,DC=com"></div>
-    <div class="field"><label data-i18n="ldap_f_bind_pw">Service account password</label><input type="password" id="ldap-bind-pw" maxlength="300" autocomplete="new-password">
+    <div class="field"><label data-i18n="ldap_f_bind_dn" for="ldap-bind-dn">Service account (bind DN)</label><input type="text" id="ldap-bind-dn" maxlength="500" spellcheck="false" autocomplete="off" placeholder="CN=svc-wrm,OU=Service,DC=example,DC=com"></div>
+    <div class="field"><label data-i18n="ldap_f_bind_pw" for="ldap-bind-pw">Service account password</label><input type="password" id="ldap-bind-pw" maxlength="300" autocomplete="new-password">
       <div class="muted-text" style="margin-top:4px;" id="ldap-bind-pw-hint"></div></div>
-    <div class="field"><label data-i18n="ldap_f_base">Base DN (where users are searched)</label><input type="text" id="ldap-base" maxlength="500" spellcheck="false" placeholder="DC=example,DC=com"></div>
+    <div class="field"><label data-i18n="ldap_f_base" for="ldap-base">Base DN (where users are searched)</label><input type="text" id="ldap-base" maxlength="500" spellcheck="false" placeholder="DC=example,DC=com"></div>
     <details><summary class="muted-text" style="cursor:pointer;" data-i18n="ldap_advanced">Advanced: user filter, attributes, groups</summary>
-      <div class="field" style="margin-top:8px;"><label data-i18n="ldap_f_filter">User filter ({user} is the sign-in name)</label><input type="text" id="ldap-filter" maxlength="1000" spellcheck="false"></div>
-      <div class="field"><label data-i18n="ldap_f_login">Sign-in name attribute</label><input type="text" id="ldap-login" maxlength="60" spellcheck="false"></div>
-      <div class="field"><label data-i18n="ldap_f_idattr">Immutable ID attribute</label><input type="text" id="ldap-idattr" maxlength="60" spellcheck="false">
+      <div class="field" style="margin-top:8px;"><label data-i18n="ldap_f_filter" for="ldap-filter">User filter ({user} is the sign-in name)</label><input type="text" id="ldap-filter" maxlength="1000" spellcheck="false"></div>
+      <div class="field"><label data-i18n="ldap_f_login" for="ldap-login">Sign-in name attribute</label><input type="text" id="ldap-login" maxlength="60" spellcheck="false"></div>
+      <div class="field"><label data-i18n="ldap_f_idattr" for="ldap-idattr">Immutable ID attribute</label><input type="text" id="ldap-idattr" maxlength="60" spellcheck="false">
         <div class="muted-text" style="margin-top:4px;" data-i18n="ldap_f_idattr_d">WRM finds accounts only by this ID, never by name: objectGUID (AD), entryUUID (OpenLDAP), nsUniqueId (389 DS), ipaUniqueID (FreeIPA).</div></div>
-      <div class="field"><label data-i18n="ldap_f_groupbase">Group base DN (optional)</label><input type="text" id="ldap-groupbase" maxlength="500" spellcheck="false"></div>
+      <div class="field"><label data-i18n="ldap_f_groupbase" for="ldap-groupbase">Group base DN (optional)</label><input type="text" id="ldap-groupbase" maxlength="500" spellcheck="false"></div>
       <label class="check-row"><input type="checkbox" id="ldap-nested"> <span><b data-i18n="ldap_f_nested">Nested groups</b> — <span data-i18n="ldap_f_nested_d">a member of a group inside a mapped group counts as a member.</span></span></label>
     </details>
     <div class="field" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center;"><input type="text" id="ldap-check-user" maxlength="200" spellcheck="false" autocomplete="off" style="flex:1;min-width:140px;" placeholder="jdoe" data-i18n-placeholder="ldap_check_user_ph"><button class="btn-sec btn-sm" onclick="ldapCheck()" data-i18n="sso_check">Test connection</button></div>
@@ -3124,7 +3124,7 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
   <div class="modal" style="width:640px;">
     <h3>🔄 <span id="scim-title"></span></h3>
     <input type="hidden" id="scim-id">
-    <div class="field"><label data-i18n="ldap_f_name">Name</label><input type="text" id="scim-name" maxlength="60" placeholder="Entra ID provisioning"></div>
+    <div class="field"><label data-i18n="ldap_f_name" for="scim-name">Name</label><input type="text" id="scim-name" maxlength="60" placeholder="Entra ID provisioning"></div>
     <div class="adm-h" data-i18n="scim_rules">Roles from groups</div>
     <div class="muted-text" style="margin-bottom:8px;" data-i18n="scim_rules_d">Provisioned groups become WRM teams. A rule turns a group name into a role (the strongest wins); without a matching rule an account has the user role.</div>
     <div id="scim-rules"></div>
@@ -3137,21 +3137,21 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
   <div class="modal" style="width:640px;">
     <h3>📤 <span id="siem-title"></span></h3>
     <input type="hidden" id="siem-id">
-    <div class="field"><label data-i18n="ldap_f_name">Name</label><input type="text" id="siem-name" maxlength="60" placeholder="Splunk"></div>
-    <div class="field"><label data-i18n="siem_kind">Kind</label><select id="siem-kind" onchange="siemKindChanged()"></select></div>
-    <div class="field"><label id="siem-url-lbl"></label><input type="text" id="siem-url" maxlength="500" autocomplete="off" spellcheck="false"><div class="setting-desc" id="siem-url-hint"></div></div>
-    <div class="field siem-k siem-k-splunk siem-k-elastic"><label data-i18n="siem_index">Index</label><input type="text" id="siem-index" maxlength="100" placeholder="wrm"></div>
-    <div class="field siem-k siem-k-splunk"><label data-i18n="siem_sourcetype">Source type</label><input type="text" id="siem-sourcetype" maxlength="100" placeholder="wrm:audit"></div>
-    <div class="field siem-k siem-k-sentinel"><label data-i18n="siem_tenant">Tenant ID</label><input type="text" id="siem-tenant" maxlength="100" spellcheck="false"></div>
-    <div class="field siem-k siem-k-sentinel"><label data-i18n="siem_client">Application (client) ID</label><input type="text" id="siem-client" maxlength="100" spellcheck="false"></div>
-    <div class="field siem-k siem-k-sentinel"><label data-i18n="siem_dcr">Data collection rule immutable ID</label><input type="text" id="siem-dcr" maxlength="100" spellcheck="false" placeholder="dcr-…"></div>
-    <div class="field siem-k siem-k-sentinel"><label data-i18n="siem_stream">Stream</label><input type="text" id="siem-stream" maxlength="100" placeholder="Custom-WRMAudit_CL"></div>
-    <div class="field siem-k siem-k-syslog"><label data-i18n="siem_facility">Facility</label><input type="number" id="siem-facility" min="0" max="23" placeholder="10"></div>
-    <div class="field siem-k siem-k-syslog siem-k-splunk siem-k-elastic siem-k-http"><label data-i18n="siem_ca">Extra trusted CA (PEM, optional)</label><textarea id="siem-ca" rows="3" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----"></textarea></div>
-    <div class="field siem-k siem-k-syslog"><label data-i18n="siem_cert">Client certificate (PEM, optional)</label><textarea id="siem-cert" rows="3" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----"></textarea></div>
-    <div class="field siem-k siem-k-syslog siem-k-splunk siem-k-elastic siem-k-sentinel siem-k-http"><label id="siem-secret-lbl"></label><textarea id="siem-secret" rows="2" spellcheck="false" autocomplete="off" style="-webkit-text-security:disc;"></textarea><div class="setting-desc" id="siem-secret-hint"></div></div>
-    <div class="field"><label data-i18n="siem_actions">Send only these actions (prefixes, comma separated; empty = everything)</label><input type="text" id="siem-actions" maxlength="2000" placeholder="auth., admin., security., credential."></div>
-    <div class="field" id="siem-start-wrap"><label data-i18n="siem_start">Start with</label><select id="siem-start"><option value="now" data-i18n="siem_start_now">New events from now on</option><option value="all" data-i18n="siem_start_all">The whole audit log kept in WRM</option></select></div>
+    <div class="field"><label data-i18n="ldap_f_name" for="siem-name">Name</label><input type="text" id="siem-name" maxlength="60" placeholder="Splunk"></div>
+    <div class="field"><label data-i18n="siem_kind" for="siem-kind">Kind</label><select id="siem-kind" onchange="siemKindChanged()"></select></div>
+    <div class="field"><label id="siem-url-lbl" for="siem-url"></label><input type="text" id="siem-url" maxlength="500" autocomplete="off" spellcheck="false"><div class="setting-desc" id="siem-url-hint"></div></div>
+    <div class="field siem-k siem-k-splunk siem-k-elastic"><label data-i18n="siem_index" for="siem-index">Index</label><input type="text" id="siem-index" maxlength="100" placeholder="wrm"></div>
+    <div class="field siem-k siem-k-splunk"><label data-i18n="siem_sourcetype" for="siem-sourcetype">Source type</label><input type="text" id="siem-sourcetype" maxlength="100" placeholder="wrm:audit"></div>
+    <div class="field siem-k siem-k-sentinel"><label data-i18n="siem_tenant" for="siem-tenant">Tenant ID</label><input type="text" id="siem-tenant" maxlength="100" spellcheck="false"></div>
+    <div class="field siem-k siem-k-sentinel"><label data-i18n="siem_client" for="siem-client">Application (client) ID</label><input type="text" id="siem-client" maxlength="100" spellcheck="false"></div>
+    <div class="field siem-k siem-k-sentinel"><label data-i18n="siem_dcr" for="siem-dcr">Data collection rule immutable ID</label><input type="text" id="siem-dcr" maxlength="100" spellcheck="false" placeholder="dcr-…"></div>
+    <div class="field siem-k siem-k-sentinel"><label data-i18n="siem_stream" for="siem-stream">Stream</label><input type="text" id="siem-stream" maxlength="100" placeholder="Custom-WRMAudit_CL"></div>
+    <div class="field siem-k siem-k-syslog"><label data-i18n="siem_facility" for="siem-facility">Facility</label><input type="number" id="siem-facility" min="0" max="23" placeholder="10"></div>
+    <div class="field siem-k siem-k-syslog siem-k-splunk siem-k-elastic siem-k-http"><label data-i18n="siem_ca" for="siem-ca">Extra trusted CA (PEM, optional)</label><textarea id="siem-ca" rows="3" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----"></textarea></div>
+    <div class="field siem-k siem-k-syslog"><label data-i18n="siem_cert" for="siem-cert">Client certificate (PEM, optional)</label><textarea id="siem-cert" rows="3" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----"></textarea></div>
+    <div class="field siem-k siem-k-syslog siem-k-splunk siem-k-elastic siem-k-sentinel siem-k-http"><label id="siem-secret-lbl" for="siem-secret"></label><textarea id="siem-secret" rows="2" spellcheck="false" autocomplete="off" style="-webkit-text-security:disc;"></textarea><div class="setting-desc" id="siem-secret-hint"></div></div>
+    <div class="field"><label data-i18n="siem_actions" for="siem-actions">Send only these actions (prefixes, comma separated; empty = everything)</label><input type="text" id="siem-actions" maxlength="2000" placeholder="auth., admin., security., credential."></div>
+    <div class="field" id="siem-start-wrap"><label data-i18n="siem_start" for="siem-start">Start with</label><select id="siem-start"><option value="now" data-i18n="siem_start_now">New events from now on</option><option value="all" data-i18n="siem_start_all">The whole audit log kept in WRM</option></select></div>
     <label class="check-row"><input type="checkbox" id="siem-enabled"> <span><b data-i18n="sso_f_enabled">Enabled</b></span></label>
     <div class="modal-footer"><button class="btn-sec" onclick="closeModal('modal-siem')" data-i18n="cancel">Cancel</button><button onclick="siemSave()" data-i18n="save">Save</button></div>
   </div>
@@ -11532,8 +11532,8 @@ async function bitwardenRefresh() {
     body.innerHTML=`<p>${esc(t('bw_help'))}</p><div class="hint-box" role="status">${esc(s.unlocked ? t('bw_unlocked') : s.status==='locked' ? t('bw_locked') : t('bw_signed_out'))}${s.userEmail ? ' · '+esc(s.userEmail) : ''}${s.serverUrl ? ' · '+esc(s.serverUrl) : ''}</div>`;
     if (!s.unlocked) {
       const locked=s.status==='locked';
-      body.insertAdjacentHTML('beforeend',`<div class="field-row"><div class="field"><label data-i18n="bw_server">${esc(t('bw_server'))}</label><input id="bw-server" type="url" value="${esc(s.serverUrl || 'https://vault.bitwarden.com')}" ${locked?'disabled':''}></div><div class="field"><label>${esc(t('bw_email'))}</label><input id="bw-email" type="email" autocomplete="username" value="${esc(s.userEmail || '')}" ${locked?'disabled':''}></div></div><div class="field"><label>${esc(t('bw_master'))}</label><input id="bw-password" type="password" autocomplete="off"></div>
-      ${locked?'':`<details><summary>${esc(t('bw_api_mfa'))}</summary><div class="field-row"><div class="field"><label>Client ID</label><input id="bw-client-id" autocomplete="off"></div><div class="field"><label>Client secret</label><input id="bw-client-secret" type="password" autocomplete="off"></div></div><p class="muted-text">${esc(t('bw_api_hint'))}</p><div class="field-row"><div class="field"><label>${esc(t('bw_mfa_method'))}</label><select id="bw-method"><option value="0">Authenticator</option><option value="1">Email</option><option value="3">YubiKey</option></select></div><div class="field"><label>${esc(t('bw_mfa_code'))}</label><input id="bw-code" autocomplete="one-time-code"></div></div></details>`}
+      body.insertAdjacentHTML('beforeend',`<div class="field-row"><div class="field"><label data-i18n="bw_server" for="bw-server">${esc(t('bw_server'))}</label><input id="bw-server" type="url" value="${esc(s.serverUrl || 'https://vault.bitwarden.com')}" ${locked?'disabled':''}></div><div class="field"><label for="bw-email">${esc(t('bw_email'))}</label><input id="bw-email" type="email" autocomplete="username" value="${esc(s.userEmail || '')}" ${locked?'disabled':''}></div></div><div class="field"><label for="bw-password">${esc(t('bw_master'))}</label><input id="bw-password" type="password" autocomplete="off"></div>
+      ${locked?'':`<details><summary>${esc(t('bw_api_mfa'))}</summary><div class="field-row"><div class="field"><label for="bw-client-id">Client ID</label><input id="bw-client-id" autocomplete="off"></div><div class="field"><label for="bw-client-secret">Client secret</label><input id="bw-client-secret" type="password" autocomplete="off"></div></div><p class="muted-text">${esc(t('bw_api_hint'))}</p><div class="field-row"><div class="field"><label for="bw-method">${esc(t('bw_mfa_method'))}</label><select id="bw-method"><option value="0">Authenticator</option><option value="1">Email</option><option value="3">YubiKey</option></select></div><div class="field"><label for="bw-code">${esc(t('bw_mfa_code'))}</label><input id="bw-code" autocomplete="one-time-code"></div></div></details>`}
       <div class="vault-tools"><button id="bw-login" class="btn-sm" onclick="bitwardenLogin(${locked})">${esc(locked?t('bw_unlock'):t('bw_login'))}</button>${locked?`<button class="btn-sec btn-sm" onclick="bitwardenAction('logout')">${esc(t('bw_logout'))}</button>`:''}</div>`);
     } else {
       body.insertAdjacentHTML('beforeend',`<div class="vault-tools"><button class="btn-sm" onclick="bitwardenAction('sync')">↻ ${esc(t('bw_sync'))}</button><button class="btn-sec btn-sm" onclick="bitwardenAction('lock')">🔒 ${esc(t('bw_lock'))}</button><button class="btn-sec btn-sm" onclick="bitwardenAction('logout')">${esc(t('bw_logout'))}</button></div><div id="bw-keys"></div>`);
@@ -16882,9 +16882,9 @@ async function renderNotifyPane() {
       <input type="text" class="nf-addr" data-ch="${c.id}" value="${esc(addrOf(c.id))}" placeholder="${esc(t('nf_addr_default'))}"></div>`).join('') +
     `<div class="adm-h">${esc(t('nf_quiet'))}</div>
     <label class="check-row"><input type="checkbox" id="nf-quiet" ${p.quiet_enabled ? 'checked' : ''}> <span><b>${esc(t('nf_quiet_on'))}</b> — <span>${esc(t('nf_quiet_d'))}</span></span></label>
-    <div class="field-row"><div class="field"><label>${esc(t('nf_quiet_from'))}</label><input type="time" id="nf-qs" value="${esc(p.quiet_start || '22:00')}"></div>
-      <div class="field"><label>${esc(t('nf_quiet_to'))}</label><input type="time" id="nf-qe" value="${esc(p.quiet_end || '07:00')}"></div>
-      <div class="field"><label>${esc(t('nf_tz'))}</label><input type="text" id="nf-tz" value="${esc(browserTZ())}" readonly></div></div>
+    <div class="field-row"><div class="field"><label for="nf-qs">${esc(t('nf_quiet_from'))}</label><input type="time" id="nf-qs" value="${esc(p.quiet_start || '22:00')}"></div>
+      <div class="field"><label for="nf-qe">${esc(t('nf_quiet_to'))}</label><input type="time" id="nf-qe" value="${esc(p.quiet_end || '07:00')}"></div>
+      <div class="field"><label for="nf-tz">${esc(t('nf_tz'))}</label><input type="text" id="nf-tz" value="${esc(browserTZ())}" readonly></div></div>
     ${d.pending ? `<div class="muted-text">⏳ ${esc(t('nf_pending').replace('{n}', d.pending))}</div>` : ''}
     <div style="display:flex;justify-content:flex-end;margin-top:10px;"><button onclick="saveNotifyPane()">${esc(t('save'))}</button></div>`;
 }
@@ -17218,7 +17218,7 @@ async function open2FASetup(forced) {
     <ol style="font-size:12.5px;color:var(--text2);padding-left:18px;line-height:1.7;">
       <li>${esc(t('twofa_step1'))}</li><li>${esc(t('twofa_step2'))}</li><li>${esc(t('twofa_step3'))}</li></ol>
     <div class="qr-box"><img src="${d.qr}" alt="QR"><div style="flex:1;min-width:180px;"><div class="muted-text" style="margin-bottom:4px;">${esc(t('twofa_manual'))}</div><div class="secret-text">${esc(d.secret.replace(/(.{4})/g, '$1 ').trim())}</div></div></div>
-    <div class="field"><label>${esc(t('verification_code'))}</label><input type="text" id="twofa-code" class="code-input" inputmode="numeric" maxlength="7" autocomplete="one-time-code" onkeydown="if(event.key==='Enter') confirm2FA()"></div>
+    <div class="field"><label for="twofa-code">${esc(t('verification_code'))}</label><input type="text" id="twofa-code" class="code-input" inputmode="numeric" maxlength="7" autocomplete="one-time-code" onkeydown="if(event.key==='Enter') confirm2FA()"></div>
     <div class="modal-footer">
       ${forced ? `<button class="btn-sec" onclick="doLogout()">${esc(t('sign_out'))}</button>` : `<button class="btn-sec" onclick="closeModal('modal-2fa')">${esc(t('cancel'))}</button>`}
       <button onclick="confirm2FA()">${esc(t('turn_on'))}</button>
