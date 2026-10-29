@@ -58,8 +58,8 @@ Legenda statusa: `todo` · `wip` · `done` · `n/a` (samo enterprise / samo publ
 
 | ID | Problem | Popravak | Status |
 |----|---------|----------|--------|
-| ENT-01 | WebAuthn `UserVerification: preferred` (passkey može biti single-factor) | `required` za 2FA/passkey prijavu; dokumentirati | todo |
-| ENT-02 | Backup CLI kopira `.key` uz backup | zadržati, ali jasno upozoriti + opcija `--without-key` | todo |
+| ENT-01 | WebAuthn `UserVerification: preferred` (passkey može biti single-factor) | `required` za 2FA/passkey prijavu; dokumentirati | done (54a05fe) |
+| ENT-02 | Backup CLI kopira `.key` uz backup | zadržati, ali jasno upozoriti + opcija `--without-key` | done (fb24f3b) |
 | ENT-03 | Nema scheduliranog backupa | dnevni backup + retencija (admin policy) | done (e1ec223) |
 
 ## Redoslijed izdavanja
