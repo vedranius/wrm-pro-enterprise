@@ -17227,10 +17227,20 @@ function showRecoveryCodes(codes, reloadAfter) {
     <p style="font-size:12.5px;color:var(--text2);line-height:1.55;">${esc(t('recovery_codes_desc'))}</p>
     <div class="recovery-grid">${codes.map(c => `<div>${esc(c)}</div>`).join('')}</div>
     <div class="modal-footer">
-      <button class="btn-sec" onclick="copyText(${esc(JSON.stringify(codes.join('\n')))})">📋 ${esc(t('copy'))}</button>
-      <button class="btn-sec" onclick="downloadText('wrm-recovery-codes.txt', ${esc(JSON.stringify('Web Remote Manager — recovery codes (' + ((currentUser && currentUser.username) || '') + ')\n\n' + codes.join('\n') + '\n'))})">⬇ ${esc(t('download'))}</button>
-      <button onclick="finishRecoveryCodes(${reloadAfter ? 'true' : 'false'})">${esc(t('saved_them'))}</button>
+      <button class="btn-sec" id="twofa-copy">📋 ${esc(t('copy'))}</button>
+      <button class="btn-sec" id="twofa-download">⬇ ${esc(t('download'))}</button>
+      <button id="twofa-done">${esc(t('saved_them'))}</button>
     </div>`;
+  // Listeners instead of inline handlers: recovery codes and the username never reach a
+  // JavaScript string in an attribute, where HTML escaping cannot protect them.
+  const codesText = codes.join('\n');
+  const fileText = 'Web Remote Manager — recovery codes (' + ((currentUser && currentUser.username) || '') + ')\n\n' + codesText + '\n';
+  const copyBtn = document.getElementById('twofa-copy');
+  if (copyBtn) copyBtn.addEventListener('click', () => copyText(codesText));
+  const dlBtn = document.getElementById('twofa-download');
+  if (dlBtn) dlBtn.addEventListener('click', () => downloadText('wrm-recovery-codes.txt', fileText));
+  const doneBtn = document.getElementById('twofa-done');
+  if (doneBtn) doneBtn.addEventListener('click', () => finishRecoveryCodes(!!reloadAfter));
 }
 
 function finishRecoveryCodes(reload) {
