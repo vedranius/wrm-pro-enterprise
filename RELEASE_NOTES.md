@@ -1,3 +1,21 @@
+## Web Remote Manager PRO v14.0.3 — egress, tunnels and host keys
+
+**The next review batch.**
+
+- **Server-side fetches cannot reach cloud metadata or link-local addresses** (Git, NetBox, AI providers, OIDC).
+- **A loopback tunnel is private to its owner:** connections, SFTP and FTP refuse a port held by another user's tunnel.
+- **Host-key auto-trust is scoped to the connection owner** in tofu mode (administrators and BMC owners included).
+- **Terminal clipboard history expires after an hour.**
+- **Daily database snapshots** (`backup_daily`, `backup_keep`) with retention, next to the database.
+
+### Upgrade
+
+Replace the executable or container and keep the database and encryption key. No schema change.
+
+[Download v14.0.3](https://github.com/vedranius/wrm-pro-enterprise/releases/tag/v14.0.3) · [Full changelog](CHANGELOG.md)
+
+---
+
 ## Web Remote Manager PRO v14.0.2 — egress, links and scans
 
 **A small follow-up to v14.0.1** with the next review batch.
