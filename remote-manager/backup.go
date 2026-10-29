@@ -6,9 +6,11 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -50,6 +52,57 @@ func backupCLI(dest string, withKey bool) error {
 	}
 	fmt.Printf("Backup written to %s. (No key file here; back up the encryption key separately.)\n", dest)
 	return nil
+}
+
+// scheduledBackupDir holds the automatic snapshots next to the database.
+func scheduledBackupDir() string { return resolveDBPath() + ".backups" }
+
+// runScheduledBackup writes one snapshot and keeps the newest backup_keep files.
+func runScheduledBackup() (string, error) {
+	dir := scheduledBackupDir()
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", err
+	}
+	dest := filepath.Join(dir, "wrm-"+AppVersion+"-"+time.Now().UTC().Format("20060102-150405")+".db")
+	if err := backupDatabase(dest); err != nil {
+		return "", err
+	}
+	if keep := settingInt("backup_keep"); keep > 0 {
+		pruneBackups(dir, keep)
+	}
+	auditLogAs(nil, 0, "system", "system.backup", filepath.Base(dest), map[string]string{"path": dest})
+	return dest, nil
+}
+
+// pruneBackups keeps the newest keep snapshot files (their names carry the timestamp).
+func pruneBackups(dir string, keep int) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	var files []string
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(strings.ToLower(e.Name()), ".db") {
+			files = append(files, e.Name())
+		}
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(files)))
+	for i := keep; i < len(files); i++ {
+		os.Remove(filepath.Join(dir, files[i]))
+	}
+}
+
+// backupLoop takes one snapshot shortly after start and then every 24 hours.
+func backupLoop() {
+	time.Sleep(10 * time.Minute)
+	for {
+		if getSetting("backup_daily") == "daily" {
+			if _, err := runScheduledBackup(); err != nil {
+				log.Printf("Scheduled backup: %v", err)
+			}
+		}
+		time.Sleep(24 * time.Hour)
+	}
 }
 
 // restoreCLI restores the database from a validated backup. It runs before the server

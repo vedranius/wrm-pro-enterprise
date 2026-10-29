@@ -231,6 +231,9 @@ var settingSpecs = []settingSpec{
 	// Audit & session recording
 	{Key: "audit_enabled", Default: "1", Kind: "bool", Alias: "AUDIT_ENABLED"},
 	{Key: "audit_retention_days", Default: "365", Kind: "int", Min: 7, Max: 3650},
+	// Scheduled database snapshots (backup.go): a VACUUM INTO copy in <DB>.backups every 24 h.
+	{Key: "backup_daily", Default: "off", Kind: "enum", Enum: []string{"off", "daily"}},
+	{Key: "backup_keep", Default: "7", Kind: "int", Min: 1, Max: 60},
 	// File edit history (file_edits.go, v13.14.0): diffs of files saved from the editor or written by the AI
 	{Key: "file_edit_history", Default: "1", Kind: "bool"},
 	{Key: "file_edit_max_kb", Default: "1024", Kind: "int", Min: 16, Max: 10240},
