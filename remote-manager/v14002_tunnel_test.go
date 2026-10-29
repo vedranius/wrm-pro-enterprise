@@ -11,7 +11,6 @@ import (
 // TestLoopbackTunnelOwnership covers SEC-04: a loopback port held by one user's tunnel must
 // not be reachable through another user's connection.
 func TestLoopbackTunnelOwnership(t *testing.T) {
-	const port = 45678
 	tr := &tunnelRun{key: "test-guard", def: tunnelDef{Kind: "local"}, ownerID: 1, boundAddr: "127.0.0.1:45678"}
 	tunnelMgr.mu.Lock()
 	tunnelMgr.runs[tr.key] = tr
