@@ -1,3 +1,9 @@
+## [14.0.6] - 2026-10-29
+
+### Fixed
+
+- **Keyboard focus no longer leaves an open dialog.** Tab and Shift+Tab wrap inside the topmost open modal instead of moving into the page behind the overlay.
+
 ## [14.0.5] - 2026-10-29
 
 ### Fixed
