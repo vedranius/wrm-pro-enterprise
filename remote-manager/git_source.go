@@ -143,6 +143,9 @@ func gitAPIBase(kind, raw string) (string, error) {
 	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
 		return "", fmt.Errorf("enter the address of the Git server (https://…)")
 	}
+	if err := guardEgressURL(raw); err != nil {
+		return "", err
+	}
 	if strings.Contains(u.Path, "/api/") {
 		return raw, nil
 	}
