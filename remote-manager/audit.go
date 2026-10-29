@@ -4,6 +4,7 @@
 package main
 
 import (
+	"crypto/hmac"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/csv"
@@ -145,7 +146,7 @@ func auditWrite(r *http.Request, userID int, username, action, target string, de
 		auditChain.loaded = true
 	}
 	prev := auditChain.last
-	h := auditHash(prev, ts, userID, username, ip, action, target, det, ref.ConnID, ref.SessionID)
+	h := auditHashKeyed(prev, ts, userID, username, ip, action, target, det, ref.ConnID, ref.SessionID)
 	_, err := db.Exec(`INSERT INTO audit_log (ts, user_id, username, ip, action, target, details, conn_id, session_id, prev_hash, hash)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?)`, ts, uid, username, ip, action, target, det, connID, sessID, prev, h)
 	if err == nil {
@@ -184,6 +185,18 @@ func auditHash(prev, ts string, userID int, username, ip, action, target, detail
 	b, _ := json.Marshal([]interface{}{prev, ts, userID, username, ip, action, target, details, connID, sessionID})
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])
+}
+
+// auditHashKeyed is the current chain hash: HMAC-SHA256 with a key derived from the
+// installation's encryption key. A copied database (or SQL write access) can no longer
+// recompute the chain without the key. The "h2:" prefix keeps old chains verifiable.
+func auditHashKeyed(prev, ts string, userID int, username, ip, action, target, details string, connID, sessionID int) string {
+	material := append(append([]byte{}, encryptionKey...), []byte("wrm-audit-chain")...)
+	key := sha256.Sum256(material)
+	mac := hmac.New(sha256.New, key[:])
+	b, _ := json.Marshal([]interface{}{prev, ts, userID, username, ip, action, target, details, connID, sessionID})
+	mac.Write(b)
+	return "h2:" + hex.EncodeToString(mac.Sum(nil))
 }
 
 // createAppendOnlyTriggers makes the audit tables append-only at the database level.
@@ -426,7 +439,11 @@ func verifyAuditChain() auditVerifyResult {
 			res.OK, res.BrokenAt, res.Reason = false, id, "an entry before this one was removed or changed"
 			break
 		}
-		if auditHash(prev, ts, int(uid.Int64), username, ip, action, target, details, int(cid.Int64), int(sid.Int64)) != h {
+		want := auditHash(prev, ts, int(uid.Int64), username, ip, action, target, details, int(cid.Int64), int(sid.Int64))
+		if strings.HasPrefix(h, "h2:") {
+			want = auditHashKeyed(prev, ts, int(uid.Int64), username, ip, action, target, details, int(cid.Int64), int(sid.Int64))
+		}
+		if want != h {
 			res.OK, res.BrokenAt, res.Reason = false, id, "this entry was changed"
 			break
 		}
