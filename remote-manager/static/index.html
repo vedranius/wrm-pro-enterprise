@@ -6487,6 +6487,24 @@ function closeModal(id) {
   const back = m.querySelector('.modal-back');
   if (back) back.remove();
 }
+// Keyboard focus stays inside the open dialog (a11y): Tab and Shift+Tab wrap around its
+// controls instead of moving into the page behind the overlay.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab' || e.altKey || e.ctrlKey || e.metaKey) return;
+  const open = [...document.querySelectorAll('.modal-overlay.open')].filter(m => m.offsetParent !== null);
+  if (!open.length) return;
+  const modal = open[open.length - 1];
+  const items = [...modal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter(el => el.offsetParent !== null);
+  if (!items.length) return;
+  const first = items[0], last = items[items.length - 1];
+  const inside = modal.contains(document.activeElement);
+  if (e.shiftKey && (!inside || document.activeElement === first)) {
+    e.preventDefault(); last.focus();
+  } else if (!e.shiftKey && (!inside || document.activeElement === last)) {
+    e.preventDefault(); first.focus();
+  }
+});
 // openInsteadOf replaces dialog fromId with the one open() shows, which then gets a "Back"
 // button: it closes that dialog and calls reopen() to show the previous one again.
 function openInsteadOf(fromId, open, reopen) {
