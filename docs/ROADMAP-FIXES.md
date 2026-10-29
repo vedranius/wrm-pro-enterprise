@@ -17,8 +17,8 @@ Legenda statusa: `todo` · `wip` · `done` · `n/a` (samo enterprise / samo publ
 | SEC-04 | High | Loopback tuneli dostupni svim korisnicima; SOCKS bez autha | provjera vlasnika na svim loopback dialovima; SOCKS user/pass | test: drugi korisnik ne može na tuđi tunel | todo | — | — |
 | SEC-05 | Medium | Globalni host-key TOFU | known_hosts po vlasniku; auto-trust traži vlasništvo | test: korisnik B ne može auto-trustati host korisnika A | todo | — | — |
 | SEC-06 | Medium | Audit lanac bez HMAC-a; CLI stvara dvije grane | HMAC s ključem izvan DB-a; insert čita prethodni hash | test: izmijenjen zapis → verify fail; CLI insert ne lomi lanac | todo | — | — |
-| SEC-07 | Medium | Gost identitet je klijentski kolačić; `allow_link_shares=off` proširuje na sve prijavljene | potpisani guest cookie + IP binding; zabranjeni link = 403, ne `users` | test: obrisan cookie ne vraća pristup; policy off → 403 | todo | — | — |
-| SEC-08 | Low | CSP `unsafe-inline`; HSTS samo na TLS-u; cookie bez `__Host-` | nonce CSP, HSTS preko `isHTTPS`, `__Host-` + rotacija | test: headeri; CSP bez `unsafe-inline` | todo | — | — |
+| SEC-07 | Medium | Gost identitet je klijentski kolačić; `allow_link_shares=off` proširuje na sve prijavljene | potpisani guest cookie + IP binding; zabranjeni link = 403, ne `users` | test: obrisan cookie ne vraća pristup; policy off → 403 | done | 4232668 | 7ad00fb |
+| SEC-08 | Low | CSP `unsafe-inline`; HSTS samo na TLS-u; cookie bez `__Host-` | nonce CSP, HSTS preko `isHTTPS`, `__Host-` + rotacija | test: headeri; CSP bez `unsafe-inline` | djelomično (HSTS; CSP/cookie ostaju) | 678c311 | 9a93e84 |
 | SEC-09 | Medium | MCP: DCR consent phishing, token upgrade bez step-upa, revoke bez autha | potvrda podrijetla + step-up za povećanje prava; revoke auth | test: upgrade bez step-upa → 403; tuđi revoke → 401 | done (step-up; DCR/revoke ostaje) | 36f6a5b | 671d118 |
 | SEC-10 | Medium | Addon ZIP bez ukupnog limita; `%2e%2e`; secrets rade kad je addon isključen | ukupni cap + fail umjesto truncate; dekodirati putanju; enabled gate iznad dispatcha | test: 500×8 MB odbijeno; `%2e%2e` odbijen; disabled → 409 | done | 9580643 | 1b4699d |
 
@@ -28,8 +28,8 @@ Legenda statusa: `todo` · `wip` · `done` · `n/a` (samo enterprise / samo publ
 |----|----------|---------|----------|------|--------|------------|--------|
 | AI-01 | High | `sudo -u root rm -rf /`, `rm -rf ../..`, here-string zaobilaze listu | unwrap `sudo/doas` s vrijednostima; normalizirati relativne putanje; parsirati `<<<` | test: sve tri forme → `rm_root`/`deny` | done | 2105206 | 26dd037 |
 | AI-02 | High | Auto budžet se resetira po sessionu; approve-later bez re-evaluacije; race na `s.Auto` | perzistirati `Used/Until` u grant; re-evaluirati s trenutnim limitima; kopirati pod lockom | test: reopen ne daje novih 50 akcija; later poštuje deny | done (budžet; approve-later/race ostaje) | 090a281 | 2587f1d |
-| AI-03 | Medium | `curl` je read-only (egress bez odobrenja); read-deny ne pokriva `.env`/`*.pem` | mrežni egress = promjena ili `ai_allow_network`; proširiti deny listu | test: `.env` i `curl` van → approval | todo | — | — |
-| AI-04 | Low | Sistemski prompt prima `PRETTY_NAME` bez untrusted oznake; nova datoteka zaobilazi read-deny | sanitizirati/escape; primijeniti read-deny i na nove putanje | test: newline/metakaraktery u os-info | todo | — | — |
+| AI-03 | Medium | `curl` je read-only (egress bez odobrenja); read-deny ne pokriva `.env`/`*.pem` | mrežni egress = promjena ili `ai_allow_network`; proširiti deny listu | test: `.env` i `curl` van → approval | done | c250b66 | 21e1d2d |
+| AI-04 | Low | Sistemski prompt prima `PRETTY_NAME` bez untrusted oznake; nova datoteka zaobilazi read-deny | sanitizirati/escape; primijeniti read-deny i na nove putanje | test: newline/metakaraktery u os-info | done | c250b66 | 21e1d2d |
 
 ## Podaci i deploy
 
@@ -40,7 +40,7 @@ Legenda statusa: `todo` · `wip` · `done` · `n/a` (samo enterprise / samo publ
 | DATA-03 | Medium | `ensureTable` netransakcijski; enterprise nema 13.14.1 fix | `createColumns` + restore instanci (transakcija ostaje kao DATA-03b) | test: restart ne gubi `addon_instances` | done | 244a4f9 | — (u 13.14.1) |
 | DATA-04 | Low | Brisanje konekcije ostavlja monitoring/log/git siročad | `deleteConnectionRows()` na svim mjestima | test: nema redova nakon delete | done | 9bf7e1b | 0a56f14 |
 | GIT-01 | High | Host build = shell za svakoga s `git_medium`, nasljeđuje `WRM_*` env | admin-only + scrub env | test: ne-admin → 403; env bez `WRM_*` | done | e8c3860 | f77d9a5 |
-| GIT-02 | Medium | 2 MB scan cap; `/tmp` deploy log; tar bez validacije | stream/po instalaciji; maknuti `/tmp`; `tar -tf` provjera | test: veliki scan; symlink log; tar s `..` | todo | — | — |
+| GIT-02 | Medium | 2 MB scan cap; `/tmp` deploy log; tar bez validacije | stream/po instalaciji; maknuti `/tmp`; `tar -tf` provjera | test: veliki scan; symlink log; tar s `..` | done (scan cap, /tmp log; tar validacija ostaje) | 01e6ae5 | 417a46f |
 
 ## Frontend / UX
 

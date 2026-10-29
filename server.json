@@ -8,7 +8,7 @@
     "url": "https://github.com/vedranius/web-browser-RDM-public",
     "source": "github"
   },
-  "version": "14.0.1",
+  "version": "14.0.2",
   "remotes": [
     {
       "type": "streamable-http",

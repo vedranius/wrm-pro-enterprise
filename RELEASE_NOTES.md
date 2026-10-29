@@ -1,3 +1,21 @@
+## Web Remote Manager PRO v14.0.2 — egress, links and scans
+
+**A small follow-up to v14.0.1** with the next review batch.
+
+- **`curl`/`wget` are no longer read-only:** fetching a URL is egress and needs approval. More secret files (`.env`, `.p12`, `.npmrc`, `wp-config.php`, `terraform.tfvars`, …) are refused, also when the assistant wants to create them.
+- **Guest links stay closed** when the administrator disables them; they are not widened to every signed-in account.
+- **HSTS is sent behind a trusted reverse proxy.**
+- **Whole-server Git scans** get a 32 MB output budget and report truncation; the deploy history no longer falls back to `/tmp`.
+- **Release:** the enterprise image moved to `ghcr.io/<owner>/wrm-pro-enterprise`, and a registry failure no longer blocks publishing a release.
+
+### Upgrade
+
+Replace the executable or container and keep the database and encryption key. No schema change.
+
+[Download v14.0.2](https://github.com/vedranius/wrm-pro-enterprise/releases/tag/v14.0.2) · [Full changelog](CHANGELOG.md)
+
+---
+
 ## Web Remote Manager PRO v14.0.1 — security and reliability fixes
 
 **The first patch release after v14.0.0.** It closes the highest-priority findings of an external review and the issues the review found in the automatic-mode and deployment paths.

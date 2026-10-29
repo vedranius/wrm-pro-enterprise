@@ -1,3 +1,20 @@
+## [14.0.2] - 2026-10-29
+
+### Security
+
+- **`curl` is network egress, not a read-only command.** A model that has just read a file can put its contents into a URL, so URL fetches now need approval (or an automatic-mode pattern).
+- **More files are never read (or created) by the assistant:** `.env`/`.env.*`, `*.p12`/`*.pfx`, `.npmrc`, `.pypirc`, `wp-config.php`, `terraform.tfvars`, `credentials.json`, `config/database.yml`.
+- **Server-controlled system info is sanitized** (line breaks, control characters and angle brackets) before it enters the system prompt.
+- **Guest links stay closed.** With `allow_link_shares` off, an existing link is refused (`403 link_shares_disabled`) instead of becoming available to every signed-in account.
+- **HSTS behind a trusted proxy.** The header is now sent whenever `isHTTPS()` is true, including `WRM_TRUST_PROXY=1` setups.
+
+### Fixed
+
+- **Whole-server Git scans are no longer cut at 2 MB.** Scan output has a 32 MB cap, and any truncation is reported as such instead of "the scan did not finish".
+- **No `/tmp/deploytool-updates.jsonl`.** The deploy history never uses the predictable `/tmp` path and skips a symlink at its target.
+- **Certificate reads stay read-only.** `openssl x509 -in cert.pem -noout` works again; private key bundles remain denied.
+- **The enterprise container image is `ghcr.io/<owner>/wrm-pro-enterprise`** (the shared `wrm-pro` package belongs to the public repository). A registry failure no longer blocks a release.
+
 ## [14.0.1] - 2026-10-28
 
 ### Security

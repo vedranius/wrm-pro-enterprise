@@ -18,7 +18,7 @@ permissions:
 
 env:
   # Version for branch builds. Tag builds use the tag name (e.g. v10.10.0) as version and in file names.
-  APP_VERSION: v14.0.1
+  APP_VERSION: v14.0.2
   GH_TOKEN: ${{ github.token }}
 
 jobs:
@@ -200,7 +200,7 @@ jobs:
 
   # ─────────────────────────────────────────────
   #  Container image: built and smoke-tested on every run, published to
-  #  GitHub Container Registry (ghcr.io/<owner>/wrm-pro) for release tags
+  #  GitHub Container Registry (ghcr.io/<owner>/wrm-pro-enterprise) for release tags
   # ─────────────────────────────────────────────
   docker:
     name: Docker image
@@ -270,7 +270,7 @@ jobs:
       - name: Publish to GitHub Container Registry
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          IMAGE="ghcr.io/$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')/wrm-pro"
+          IMAGE="ghcr.io/$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')/wrm-pro-enterprise"
           echo "${GH_TOKEN}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
           docker tag wrm-pro:ci "${IMAGE}:${GITHUB_REF_NAME}"
           docker tag wrm-pro:ci "${IMAGE}:latest"
@@ -292,10 +292,10 @@ jobs:
     permissions:
       contents: write   # create the tag
       actions: write    # start this workflow on the tag
-    needs: [build, appimage, docker]
+    needs: [build, appimage]
     # build and appimage depend on create-release, which is skipped on branch pushes: without
     # !cancelled() the implicit success() check skips this job too.
-    if: ${{ !cancelled() && needs.build.result == 'success' && needs.appimage.result == 'success' && needs.docker.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    if: ${{ !cancelled() && needs.build.result == 'success' && needs.appimage.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     concurrency:
       group: auto-release
       cancel-in-progress: false
@@ -330,7 +330,7 @@ jobs:
       contents: write
       id-token: write      # build provenance: a short-lived Sigstore certificate for this workflow
       attestations: write
-    needs: [build, appimage, docker]
+    needs: [build, appimage]
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
