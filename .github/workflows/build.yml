@@ -75,6 +75,29 @@ jobs:
           node tools/check-ui.js
           node --test tools/test-git-simple.js tools/test-ai-events.js tools/test-appimage.js tools/test-workspace-context.js tools/test-git-client.js tools/test-monitoring.js
 
+  # Windows: the test suite needs a POSIX shell, but the server must still compile and pass
+  # vet on Windows (file handling, service install, path separators).
+  windows:
+    name: Windows build & vet
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: remote-manager/go.mod
+          cache: false
+
+      - name: go vet
+        working-directory: remote-manager
+        run: go vet ./...
+
+      - name: go build
+        working-directory: remote-manager
+        run: go build -trimpath -o wrm.exe .
+
   # ─────────────────────────────────────────────
   #  Create the release (tags only) as a draft before the binaries are uploaded
   # ─────────────────────────────────────────────

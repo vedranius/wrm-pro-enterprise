@@ -408,6 +408,57 @@ func bodyLimitFor(path string) int64 {
 	return 1 << 20
 }
 
+// publicAPIPaths are the /api and /ws routes that do not rely on a session cookie: sign-in
+// and its helpers, token-based shares, hook secrets, and the SCIM, OAuth and MCP endpoints
+// that present a bearer token. Everything else under /api/ and /ws/ needs a signed-in
+// session, so a handler that forgets requireAuth is refused instead of exposed.
+var publicAPIPaths = []string{
+	"/api/version",
+	"/api/auth/config",
+	"/api/auth/register",
+	"/api/auth/login",
+	"/api/auth/logout",
+	"/api/auth/mfa",
+	"/api/auth/webauthn/login/",
+	"/api/auth/oidc/start",
+	"/api/auth/oidc/callback",
+	"/api/auth/oidc/result",
+	"/api/auth/saml/start",
+	"/api/share/",
+	"/api/hooks/",
+	"/api/mcp/",
+	"/ws/share/",
+	"/scim/v2/",
+	"/saml/",
+	"/mcp",
+	"/oauth/",
+	"/.well-known/",
+}
+
+func isPublicAPIPath(p string) bool {
+	for _, prefix := range publicAPIPaths {
+		if p == prefix || strings.HasPrefix(p, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// authGate is the deny-by-default authorization layer. A request to /api or /ws without a
+// valid session is refused before any handler runs, unless its path is listed above.
+func authGate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Path
+		if (strings.HasPrefix(p, "/api/") || strings.HasPrefix(p, "/ws/")) && !isPublicAPIPath(p) {
+			if _, err := lookupSession(r); err != nil {
+				jsonError(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func securityMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()

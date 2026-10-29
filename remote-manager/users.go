@@ -51,11 +51,13 @@ func createAuthSession(w http.ResponseWriter, r *http.Request, userID int, restr
 	if err != nil {
 		return err
 	}
-	setCookie(w, r, sessionCookieName, raw, settingInt("session_max_days")*86400)
+	setCookie(w, r, sessionCookieFor(r), raw, settingInt("session_max_days")*86400)
 	return nil
 }
 
 func clearAuthCookie(w http.ResponseWriter, r *http.Request) {
+	// Clear both forms: the prefixed cookie over HTTPS and the plain one over HTTP.
+	setCookie(w, r, hostSessionCookieName, "", -1)
 	setCookie(w, r, sessionCookieName, "", -1)
 }
 
@@ -65,7 +67,10 @@ func parseTS(s string) (time.Time, bool) {
 }
 
 func lookupSession(r *http.Request) (*authSession, error) {
-	cookie, err := r.Cookie(sessionCookieName)
+	cookie, err := r.Cookie(hostSessionCookieName)
+	if err != nil || cookie.Value == "" {
+		cookie, err = r.Cookie(sessionCookieName)
+	}
 	if err != nil || cookie.Value == "" || len(cookie.Value) > 200 {
 		return nil, errUnauthenticated
 	}

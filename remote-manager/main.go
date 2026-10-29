@@ -46,6 +46,20 @@ var AppVersion = "v14.0.3"
 
 const sessionCookieName = "wrm_session"
 
+// hostSessionCookieName is the same cookie with the __Host- prefix, which a browser only
+// accepts over HTTPS with Path=/ and no Domain. A sibling subdomain can then neither set nor
+// overwrite the session cookie of the WRM host.
+const hostSessionCookieName = "__Host-" + sessionCookieName
+
+// sessionCookieFor picks the cookie name for this request: the prefixed one over HTTPS,
+// the plain one over plain HTTP (where browsers reject a __Host- cookie).
+func sessionCookieFor(r *http.Request) string {
+	if isHTTPS(r) {
+		return hostSessionCookieName
+	}
+	return sessionCookieName
+}
+
 var upgrader = websocket.Upgrader{CheckOrigin: checkWSOrigin, ReadBufferSize: 32 * 1024, WriteBufferSize: 64 * 1024}
 var db *sql.DB
 var encryptionKey []byte
@@ -447,7 +461,7 @@ func newRouter() http.Handler {
 	mux.HandleFunc("/ws/desktop", desktopWSHandler)
 	mux.HandleFunc("/ws/share/", shareWSHandler)
 	mux.HandleFunc("/ws/events", eventsHandler)
-	return securityMiddleware(mux)
+	return securityMiddleware(authGate(mux))
 }
 
 func main() {
