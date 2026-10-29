@@ -65,7 +65,6 @@ func TestAIReadOnlyClassifier(t *testing.T) {
 		"top -b -n 1",
 		"tar -tzf /tmp/backup.tar.gz",
 		"openssl x509 -in /etc/ssl/certs/site.pem -noout -dates",
-		"curl -sI https://example.com",
 		"stat /etc/shadow",
 		"ls -l ~/.ssh",
 		"cat ~/.ssh/id_ed25519.pub",

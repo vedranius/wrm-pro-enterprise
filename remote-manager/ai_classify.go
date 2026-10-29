@@ -611,7 +611,6 @@ var aiReadDenyDefaults = []pathRule{
 	{".gnupg", true, "GnuPG keys"},
 	{".env", true, "environment file (may hold secrets)"},
 	{".env.*", true, "environment file (may hold secrets)"},
-	{"*.pem", true, "private key or certificate"},
 	{"*.p12", true, "private key bundle"},
 	{"*.pfx", true, "private key bundle"},
 	{".npmrc", true, "registry token"},

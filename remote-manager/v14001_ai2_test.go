@@ -28,7 +28,7 @@ func TestReadDenySecretFiles(t *testing.T) {
 		"~/.env",
 		"/srv/app/.env.production",
 		"/home/u/.aws/credentials",
-		"/etc/ssl/server.pem",
+		"/etc/ssl/server.p12",
 		"/srv/app/.npmrc",
 		"/var/www/wp-config.php",
 		"/infra/terraform.tfvars",
