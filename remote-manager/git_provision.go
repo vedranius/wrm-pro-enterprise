@@ -453,6 +453,11 @@ func tarOf(files map[string][]byte, modes map[string]int64) ([]byte, error) {
 	sort.Strings(rels)
 	now := time.Now().Truncate(time.Second) // whole seconds: plain ustar headers where the names allow it
 	for _, rel := range rels {
+		// The names end up in tar headers that the target host extracts; a bundle key with
+		// ".." or an absolute path would write outside the staging directory.
+		if !validBundleRel(rel) {
+			return nil, fmt.Errorf("refusing to pack %q: the name is not a plain relative path", rel)
+		}
 		data := files[rel]
 		if err := tw.WriteHeader(&tar.Header{Name: rel, Mode: modes[rel], Size: int64(len(data)), ModTime: now, Typeflag: tar.TypeReg}); err != nil {
 			return nil, err
