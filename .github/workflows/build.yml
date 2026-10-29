@@ -18,7 +18,7 @@ permissions:
 
 env:
   # Version for branch builds. Tag builds use the tag name (e.g. v10.10.0) as version and in file names.
-  APP_VERSION: v14.0.6
+  APP_VERSION: v14.0.7
   GH_TOKEN: ${{ github.token }}
 
 jobs:

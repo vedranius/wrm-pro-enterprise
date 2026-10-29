@@ -1,3 +1,17 @@
+## [14.0.7] - 2026-10-29
+
+### Security
+
+- **CSP without `unsafe-inline` for scripts.** The one inline script of the UI is allowed by its SHA-256 hash; an injected `<script>` (or a `data:` source) is refused. Handler attributes keep working through `script-src-attr`.
+- **Public-only egress policy.** `egress_policy=public_only` refuses loopback, RFC 1918 and ULA targets for Git, NetBox, AI providers and OIDC unless the host is listed in `egress_allow_hosts` (names, addresses or CIDR). The default stays `allow_private` for on-premise installs.
+- **Deploy tar names are checked.** `tarOf` refuses a member name with `..` or an absolute path before it reaches the target host.
+- **No race when starting an OpenCode agent.** Mode and auto limits are read under the session lock and handed over as a copy.
+
+### Fixed
+
+- **152 form labels are associated with their fields** (`for="…"`), so screen readers announce the control name.
+- Tab and Shift+Tab stay inside the open dialog.
+
 ## [14.0.6] - 2026-10-29
 
 ### Fixed
