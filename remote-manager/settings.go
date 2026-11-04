@@ -217,7 +217,7 @@ var settingSpecs = []settingSpec{
 	// AI desktop apps (MCP)
 	{Key: "ai_mcp_enabled", Default: "0", Kind: "bool"},
 	{Key: "ai_mcp", Default: "admins", Kind: "enum", Enum: []string{"off", "admins", "all"}},
-	{Key: "ai_mcp_scopes", Default: mcpAllScopes, Kind: "string"},
+	{Key: "ai_mcp_scopes", Default: mcpDefaultScopes, Kind: "string"},
 	{Key: "ai_mcp_modes", Default: "read_only,ask,auto", Kind: "string"},
 	{Key: "ai_mcp_token_hours", Default: "168", Kind: "int", Min: 1, Max: 8760},
 	{Key: "ai_mcp_max_token_hours", Default: "720", Kind: "int", Min: 1, Max: 8760},
@@ -236,6 +236,9 @@ var settingSpecs = []settingSpec{
 	// egress_allow_hosts (names, addresses or CIDR blocks, comma separated).
 	{Key: "egress_policy", Default: "allow_private", Kind: "enum", Enum: []string{"allow_private", "public_only"}},
 	{Key: "egress_allow_hosts", Default: "", Kind: "string"},
+	// Object storage (Storages, docs/rfcs/0008): a section of its own with S3 endpoints.
+	{Key: "storages_enabled", Default: "1", Kind: "bool"},
+	{Key: "storage_edit_kb", Default: "2", Kind: "int", Min: 1, Max: 64},
 	// Scheduled database snapshots (backup.go): a VACUUM INTO copy in <DB>.backups every 24 h.
 	{Key: "backup_daily", Default: "off", Kind: "enum", Enum: []string{"off", "daily"}},
 	{Key: "backup_keep", Default: "7", Kind: "int", Min: 1, Max: 60},

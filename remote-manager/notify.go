@@ -63,7 +63,7 @@ var notifyDebounce = 3 * time.Second
 
 // Event types users can subscribe to.
 var notifyEvents = []string{"monitor.problem", "monitor.recovered", "status.down", "status.up", "credential.rotation_due", "credential.rotation_incomplete", "git.new_version", "git.drift", "git.unreachable", "git.functionality_problem", "git.functionality_recovered", "git.server_problem", "git.server_recovered",
-	"git.deploy_started", "git.deploy_done", "git.deploy_failed", "git.restart_scheduled", "git.restart_done", "git.job_upcoming", "security.break_glass_login", "security.alert", "ai.approval"}
+	"git.deploy_started", "git.deploy_done", "git.deploy_failed", "git.restart_scheduled", "git.restart_done", "git.job_upcoming", "security.break_glass_login", "security.alert", "ai.approval", "storage.down", "storage.up"}
 
 func validNotifyEvent(e string) bool {
 	for _, x := range notifyEvents {
