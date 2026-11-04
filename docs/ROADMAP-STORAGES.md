@@ -47,7 +47,7 @@ i `Refs #19` (public: `Refs #155`).
 | STG-07 | D | Brisanje bez zaštite | `allow_delete` (default off) + `X-WRM-Confirm: delete` + step-up kad je 2FA uključen + audit (ključ, veličina); multi-select uz dodatnu potvrdu; UI skriva akciju | `TestStorageDeleteGate`: bez dozvole 403, bez headera 400, s dozvolom 200 i audit; step-up 403 bez svježe potvrde | done (29ef811) | 2 |
 | STG-08 | D | Nema testova ni dokumentacije | S3 stub za sve operacije; TLS pin test; „secret ne izlazi” (API, audit, export, log); README sekcija za operatere | `go test -race -run TestStorage` zeleno; stub pokriva Range, 409 i greške providera | done (3cd5a2f) | 3 |
 | STG-09 | E | AI/MCP ne vidi storage | scopeovi `storage_read/write/delete`, alati `storage_list/read/write/delete`, AI read-deny lista (`.env`, `*.pem`), write samo uz scope i `allow_write`, delete uz scope + `allow_delete` + `confirm` | `TestStorageMCPTools`: read prolazi, write bez scopea odbijen, delete bez potvrde/dozvole odbijen, `.env` odbijen | done (c7f3f44) | 3 |
-| STG-10 | E | Nema dijeljenja | share link na prefiks: token hash, `can_write`/`can_delete`, expiry, read-only default; revoke pri brisanju storagea | `TestStorageShareToken`: token otvara samo svoj prefiks, istekli 410, revoke 401 | todo | 3 |
+| STG-10 | E | Nema dijeljenja | share link na prefiks: token hash, `can_write`/`can_delete`, expiry, read-only default; revoke pri brisanju storagea | `TestStorageShareToken`: token otvara samo svoj prefiks, istekli 410, revoke 401 | done (8ad5e42) | 3 |
 | STG-11 | E | Nema izvoza ni statusa | config export/import s `storages` (secreti redigirani, pri importu se traže ponovno); status check = `HeadBucket`; notifikacija kad storage padne | `TestStorageExportRedactsSecretsAndImport`, `TestStorageStatusRefresh` | done (29ef811, e5f0369; notifikacija ostaje) | 2 |
 | STG-12 | F | Otvrdnjavanje | update `docs/THREAT-MODEL.md`, PSIRT pregled, provjera SSRF/TLS/preview/deletion puta, pentest scenariji | sigurnosni pregled potpisan; checklist iz RFC-a odštikliran | djelomično (threat model; PSIRT pregled ostaje) | 2 |
 
@@ -71,7 +71,7 @@ i `Refs #19` (public: `Refs #155`).
 - [x] Editor: 409 na promijenjen etag, 413 iznad limita, BOM/CRLF se čuvaju.
 - [x] Video: Range/206, bez transkodiranja; nepodržan kodek jasno prijavljen.
 - [x] Rate limit i max veličina objekta rade.
-- [ ] Share token: hash, prefiks, expiry, revoke.
+- [x] Share token: hash, prefiks, expiry, revoke (read-only, bez skripte na stranici).
 - [x] AI: read uz `storage_read`; write uz scope i `allow_write`; delete uz scope + `allow_delete` + `confirm`; `.env`/`*.pem` odbijeni.
 
 ## Rizici
