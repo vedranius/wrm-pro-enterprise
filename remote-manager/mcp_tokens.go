@@ -40,7 +40,7 @@ import (
 //   GET grants, DELETE grants/{id}, POST revoke-all, GET clients, DELETE clients/{id}
 
 const (
-	mcpAllScopes        = "read_logs,run_readonly,run_with_approval,edit_file_with_approval,transfer,addons.manage,full_access"
+	mcpAllScopes        = "read_logs,run_readonly,run_with_approval,edit_file_with_approval,transfer,addons.manage,storage_read,storage_write,storage_delete,full_access"
 	mcpMaxGrantsPerUser = 25
 	mcpMaxConnsPerGrant = 50
 	mcpPATPrefix        = "wrm_pat_"
@@ -48,6 +48,10 @@ const (
 )
 
 var mcpScopeOrder = strings.Split(mcpAllScopes, ",")
+
+// mcpDefaultScopes is the administrator policy a new installation starts with: the storage
+// scopes are opt-in, because a bucket is not a server and should not arrive by default.
+const mcpDefaultScopes = "read_logs,run_readonly,run_with_approval,edit_file_with_approval,transfer,addons.manage"
 
 // The redirect addresses of the common hosted clients plus loopback for desktop clients
 // and the stdio bridge's OAuth helpers. Administrators can extend the list.
