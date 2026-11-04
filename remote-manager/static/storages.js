@@ -25,6 +25,10 @@ Object.assign(LANGS.en, {
   stg_loading: 'Loading…', stg_failed: 'The storage request failed.', stg_storage: 'Storage', stg_files: 'Files',
   stg_upload_done: 'Uploaded.', stg_deleted: 'Deleted.', stg_moved: 'Renamed.',
   stg_provider_hetzner: 'Hetzner Object Storage', stg_provider_do: 'DigitalOcean Spaces', stg_provider_aws: 'Amazon S3', stg_provider_minio: 'MinIO',
+  stg_share: 'Share', stg_share_t: 'Read-only link to a prefix', stg_share_prefix: 'Folder to share (relative to the storage prefix)',
+  stg_share_hours: 'Valid for (hours)', stg_share_create: 'Create link', stg_share_link: 'Link (shown once)', stg_share_copy: 'Copy',
+  stg_share_revoke: 'Revoke', stg_share_none: 'No links yet.', stg_share_q: 'Revoke this link? Everyone who has it loses access.',
+  stg_share_expires: 'Expires', stg_share_hint: 'Anyone with the link can list and download this folder, read-only, until it expires.',
 });
 Object.assign(LANGS.hr, {
   stg_title: 'Storage', stg_add: 'Dodaj storage', stg_none: 'Nema storagea. Dodajte S3-kompatibilni endpoint (Hetzner, DigitalOcean, AWS, MinIO).',
@@ -46,6 +50,10 @@ Object.assign(LANGS.hr, {
   stg_loading: 'Učitavam…', stg_failed: 'Zahtjev prema storageu nije uspio.', stg_storage: 'Storage', stg_files: 'Datoteke',
   stg_upload_done: 'Poslano.', stg_deleted: 'Obrisano.', stg_moved: 'Preimenovano.',
   stg_provider_hetzner: 'Hetzner Object Storage', stg_provider_do: 'DigitalOcean Spaces', stg_provider_aws: 'Amazon S3', stg_provider_minio: 'MinIO',
+  stg_share: 'Dijeli', stg_share_t: 'Link samo za čitanje na mapu', stg_share_prefix: 'Mapa za dijeljenje (relativno na prefiks storagea)',
+  stg_share_hours: 'Vrijedi (sati)', stg_share_create: 'Stvori link', stg_share_link: 'Link (prikazuje se jednom)', stg_share_copy: 'Kopiraj',
+  stg_share_revoke: 'Ukini', stg_share_none: 'Nema linkova.', stg_share_q: 'Ukiniti ovaj link? Svi koji ga imaju izgubit će pristup.',
+  stg_share_expires: 'Istječe', stg_share_hint: 'Svatko s linkom može popisati i preuzeti ovu mapu, samo čitanje, dok link ne istekne.',
 });
 
 (function () {
@@ -139,6 +147,7 @@ Object.assign(LANGS.hr, {
           <div class="stg-crumbs" id="stg-crumbs"></div>
           <button class="btn-sec btn-sm" id="stg-upload" style="display:none;">⬆ ${esc(t('stg_upload'))}</button>
           <button class="btn-sec btn-sm" id="stg-newdir" style="display:none;">＋ ${esc(t('stg_new_folder'))}</button>
+          <button class="btn-sec btn-sm" id="stg-share" style="display:none;">🔗 ${esc(t('stg_share'))}</button>
           <button class="btn-sec btn-sm" id="stg-refresh">↻</button>
           <button class="btn-sec btn-sm" id="stg-close">✕</button>
         </div>
@@ -152,6 +161,7 @@ Object.assign(LANGS.hr, {
     ov.querySelector('#stg-refresh').onclick = () => loadPrefix(state.prefix);
     ov.querySelector('#stg-upload').onclick = uploadFile;
     ov.querySelector('#stg-newdir').onclick = newFolder;
+    ov.querySelector('#stg-share').onclick = openShares;
     return ov;
   }
 
@@ -238,10 +248,12 @@ Object.assign(LANGS.hr, {
       hint.textContent = t('stg_none');
       hint.style.display = 'block';
       up.style.display = 'none'; nd.style.display = 'none';
+      const sh0 = document.getElementById('stg-share'); if (sh0) sh0.style.display = 'none';
       return;
     }
     up.style.display = can('upload') ? '' : 'none';
     nd.style.display = can('write') ? '' : 'none';
+    const shb = document.getElementById('stg-share'); if (shb) shb.style.display = '';
 
     const root = el('a', null, state.current.name);
     root.onclick = () => loadPrefix('');
@@ -608,6 +620,78 @@ Object.assign(LANGS.hr, {
       showToast(t('stg_deleted'), 'success');
       loadPrefix(state.prefix);
     }).catch((e) => showToast(e.message, 'error'));
+  }
+
+  // ─── share links ──────────────────────────────────────────────────────────────────────
+
+  function openShares() {
+    const s = state.current;
+    if (!s) return;
+    api('GET', `/api/storages/${s.id}/shares`).then((list) => renderShares(list || []))
+      .catch((e) => showToast(e.message, 'error'));
+  }
+
+  function renderShares(list) {
+    const s = state.current;
+    document.querySelectorAll('.stg-share-modal').forEach((n) => n.remove());
+    const ov = el('div', 'modal-overlay open stg-share-modal');
+    const rows = list.map((sh) => `<li style="display:flex;gap:10px;align-items:center;padding:4px 0;">
+        <span style="flex:1;">📁 ${esc(sh.prefix || '/')}</span>
+        <span class="stg-hintx">${esc(t('stg_share_expires'))}: ${esc((sh.expires_at || '').slice(0, 16).replace('T', ' '))}</span>
+        <button class="btn-sec btn-sm" data-share="${sh.id}">${esc(t('stg_share_revoke'))}</button></li>`).join('');
+    ov.innerHTML = `<div class="modal" style="width:min(620px,94vw);">
+      <h3>🔗 ${esc(t('stg_share_t'))}</h3>
+      <p class="stg-hintx">${esc(t('stg_share_hint'))}</p>
+      <div class="field"><label for="stg-sh-prefix">${esc(t('stg_share_prefix'))}</label>
+        <input id="stg-sh-prefix" type="text" value="${esc(state.prefix.replace(/\/$/, ''))}"></div>
+      <div class="field"><label for="stg-sh-hours">${esc(t('stg_share_hours'))}</label>
+        <input id="stg-sh-hours" type="number" min="1" max="720" value="24"></div>
+      <div id="stg-sh-link" style="display:none;margin:10px 0;">
+        <div class="stg-hintx">${esc(t('stg_share_link'))}</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="stg-sh-url" type="text" readonly style="flex:1;" value="">
+          <button class="btn-sec btn-sm" id="stg-sh-copy">${esc(t('stg_share_copy'))}</button>
+        </div>
+      </div>
+      <h3 style="margin-top:16px;font-size:12px;">${esc(t('stg_share'))}</h3>
+      <ul style="list-style:none;padding:0;margin:0;">${rows || `<li class="stg-hintx">${esc(t('stg_share_none'))}</li>`}</ul>
+      <div class="modal-footer">
+        <button class="btn-sec" id="stg-sh-close">${esc(t('stg_cancel'))}</button>
+        <button class="btn-pri" id="stg-sh-create">${esc(t('stg_share_create'))}</button>
+      </div></div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener('mousedown', (e) => { if (e.target === ov) ov.remove(); });
+    ov.querySelector('#stg-sh-close').onclick = () => ov.remove();
+    ov.querySelectorAll('[data-share]').forEach((btn) => {
+      btn.onclick = () => {
+        if (!confirm(t('stg_share_q'))) return;
+        api('DELETE', `/api/storages/${s.id}/shares/${btn.dataset.share}`)
+          .then(() => api('GET', `/api/storages/${s.id}/shares`))
+          .then((l) => renderShares(l || []))
+          .catch((e) => showToast(e.message, 'error'));
+      };
+    });
+    ov.querySelector('#stg-sh-create').onclick = () => {
+      const prefix = ov.querySelector('#stg-sh-prefix').value.trim();
+      const hours = parseInt(ov.querySelector('#stg-sh-hours').value, 10) || 24;
+      api('POST', `/api/storages/${s.id}/shares`, { prefix, hours }).then((sh) => {
+        const url = location.origin + sh.url;
+        const box = ov.querySelector('#stg-sh-link');
+        box.style.display = 'block';
+        ov.querySelector('#stg-sh-url').value = url;
+        ov.querySelector('#stg-sh-copy').onclick = () => copyText(url);
+        return api('GET', `/api/storages/${s.id}/shares`).then((l) => {
+          // Re-render, but keep the new link visible.
+          renderShares(l || []);
+          const again = document.querySelector('.stg-share-modal');
+          if (again) {
+            again.querySelector('#stg-sh-link').style.display = 'block';
+            again.querySelector('#stg-sh-url').value = url;
+            again.querySelector('#stg-sh-copy').onclick = () => copyText(url);
+          }
+        });
+      }).catch((e) => showToast(e.message, 'error'));
+    };
   }
 
   // ─── add / edit a storage ──────────────────────────────────────────────────────────────

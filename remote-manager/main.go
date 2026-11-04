@@ -411,6 +411,7 @@ func newRouter() http.Handler {
 	// storages: S3-compatible object storage, a section of its own (docs/rfcs/0008)
 	mux.HandleFunc("/api/storages", apiStoragesHandler)
 	mux.HandleFunc("/api/storages/", apiStoragesHandler)
+	mux.HandleFunc("/s3/", storageShareHandler)
 	mux.HandleFunc("/api/snippets", apiSnippetsHandler)
 	mux.HandleFunc("/api/me/ui/", apiUserUIHandler)
 	mux.HandleFunc("/api/me/events", apiUserEventsHandler)

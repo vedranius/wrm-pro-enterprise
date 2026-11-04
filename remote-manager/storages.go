@@ -233,6 +233,7 @@ func storageStatusLoop() {
 	for {
 		if settingBool("storages_enabled") {
 			refreshStorageStatus()
+			storageSharesCleanup()
 		}
 		time.Sleep(5 * time.Minute)
 	}
@@ -566,6 +567,8 @@ func apiStoragesHandler(w http.ResponseWriter, r *http.Request) {
 		apiStorageMove(w, r)
 	case "text":
 		apiStorageText(w, r)
+	case "shares":
+		apiStorageShares(w, r)
 	default:
 		jsonError(w, "Not found", http.StatusNotFound)
 	}
