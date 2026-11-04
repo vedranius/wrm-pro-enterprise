@@ -320,6 +320,23 @@ func TestStorageExportRedactsSecretsAndImport(t *testing.T) {
 	}
 }
 
+func TestStorageStatusRefresh(t *testing.T) {
+	u, stub, id := storageTestEnv(t, "storage-status", nil)
+	_ = stub
+	refreshStorageStatus()
+	list := storagesForUser(u.userID)
+	if len(list) != 1 || list[0].StatusOK == nil || !*list[0].StatusOK || list[0].StatusAt == "" {
+		t.Fatalf("status after a good check: %+v", list)
+	}
+	// A storage whose endpoint is gone is reported as down, not as "unknown".
+	storageStatus.Lock()
+	delete(storageStatus.m, id)
+	storageStatus.Unlock()
+	if ok, _, at := storageStatusFor(id); at != "" || ok {
+		t.Fatalf("unknown status: %v %q", ok, at)
+	}
+}
+
 func TestStorageObjectRangeAndListing(t *testing.T) {
 	u, stub, id := storageTestEnv(t, "storage-range", nil)
 	payload := []byte("0123456789abcdef")

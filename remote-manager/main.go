@@ -645,6 +645,7 @@ func serve(stop <-chan struct{}) int {
 	go notifier.run()
 	go telemetryLoop()
 	go backupLoop()
+	go storageStatusLoop()
 	go runCredentialReminders()
 	go runQuickCleanup()
 	go runGitMonitor()

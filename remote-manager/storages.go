@@ -4,12 +4,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -57,6 +59,10 @@ type Storage struct {
 	CreatedAt     string   `json:"created_at"`
 	UpdatedAt     string   `json:"updated_at"`
 	Tags          []string `json:"tags,omitempty"`
+	// Status is filled in by the background check (HeadBucket), never stored in the database.
+	StatusOK  *bool  `json:"status_ok,omitempty"`
+	StatusErr string `json:"status_err,omitempty"`
+	StatusAt  string `json:"status_at,omitempty"`
 }
 
 // storageCapabilities answers what this user and this storage allow.
@@ -143,10 +149,93 @@ func storagesForUser(userID int) []Storage {
 	out := make([]Storage, 0, len(ids))
 	for _, id := range ids {
 		if s, err := loadStorage(id, userID); err == nil {
+			if ok, msg, at := storageStatusFor(id); at != "" {
+				s.StatusOK, s.StatusErr, s.StatusAt = &ok, msg, at
+			}
 			out = append(out, s)
 		}
 	}
 	return out
+}
+
+// storageStatus is the last HeadBucket result per storage. It is memory only: a restart
+// simply shows "not checked yet".
+var storageStatus = struct {
+	sync.Mutex
+	m map[int]storageStatusEntry
+}{m: map[int]storageStatusEntry{}}
+
+type storageStatusEntry struct {
+	OK  bool
+	Err string
+	At  time.Time
+}
+
+func setStorageStatus(id int, err error) {
+	e := storageStatusEntry{OK: err == nil, At: time.Now().UTC()}
+	if err != nil {
+		e.Err = err.Error()
+	}
+	storageStatus.Lock()
+	storageStatus.m[id] = e
+	storageStatus.Unlock()
+}
+
+func storageStatusFor(id int) (bool, string, string) {
+	storageStatus.Lock()
+	defer storageStatus.Unlock()
+	e, ok := storageStatus.m[id]
+	if !ok {
+		return false, "", ""
+	}
+	return e.OK, e.Err, e.At.Format(time.RFC3339)
+}
+
+// refreshStorageStatus asks every storage for its bucket, so the list shows which one is
+// reachable before a user opens it.
+func refreshStorageStatus() {
+	rows, err := db.Query(`SELECT id, user_id FROM storages`)
+	if err != nil {
+		return
+	}
+	type pair struct{ id, userID int }
+	var all []pair
+	for rows.Next() {
+		var p pair
+		if rows.Scan(&p.id, &p.userID) == nil {
+			all = append(all, p)
+		}
+	}
+	rows.Close()
+	for i, p := range all {
+		if i >= 200 {
+			break
+		}
+		s, err := loadStorage(p.id, p.userID)
+		if err != nil {
+			continue
+		}
+		c, err := s.clientFor()
+		if err != nil {
+			setStorageStatus(s.ID, err)
+			continue
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+		err = c.headBucket(ctx)
+		cancel()
+		setStorageStatus(s.ID, err)
+	}
+}
+
+// storageStatusLoop keeps the status fresh without blocking a request.
+func storageStatusLoop() {
+	time.Sleep(45 * time.Second)
+	for {
+		if settingBool("storages_enabled") {
+			refreshStorageStatus()
+		}
+		time.Sleep(5 * time.Minute)
+	}
 }
 
 // normalizePrefix makes a prefix safe and canonical: no leading or trailing slash, no empty,
@@ -628,10 +717,12 @@ func apiStorageTest(w http.ResponseWriter, r *http.Request) {
 		out["tls_fingerprint"] = s.CAFingerprint
 	}
 	if err := storagePreflight(s, s.Secret); err != nil {
+		setStorageStatus(s.ID, err)
 		auditLog(r, userID, "storage.test_failed", s.Name, map[string]interface{}{"error": err.Error()})
 		jsonError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	setStorageStatus(s.ID, nil)
 	jsonOK(w, out)
 }
 

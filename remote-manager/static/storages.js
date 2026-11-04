@@ -73,6 +73,9 @@ Object.assign(LANGS.hr, {
 .stg-item.sel { background:var(--bg3); border-color:var(--accent); }
 .stg-item .n { font-size:12.5px; font-weight:600; }
 .stg-item .m { font-size:10.5px; color:var(--text3); margin-top:2px; }
+.stg-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--text3); margin-right:7px; vertical-align:middle; opacity:.5; }
+.stg-dot.ok { background:#3fb950; opacity:1; }
+.stg-dot.bad { background:#f85149; opacity:1; }
 .stg-main { flex:1; display:flex; flex-direction:column; min-width:0; }
 .stg-head { padding:10px 14px; border-bottom:1px solid var(--border2); display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .stg-crumbs { font-size:12px; color:var(--text2); flex:1; min-width:120px; }
@@ -182,7 +185,10 @@ Object.assign(LANGS.hr, {
     }
     state.list.forEach((s) => {
       const item = el('div', 'stg-item' + (state.current && state.current.id === s.id ? ' sel' : ''));
-      const n = el('div', 'n', s.name);
+      const n = el('div', 'n');
+      const dot = el('span', 'stg-dot' + (s.status_ok === true ? ' ok' : s.status_ok === false ? ' bad' : ''));
+      dot.title = s.status_ok === false ? (s.status_err || t('stg_failed')) : (s.status_at || '');
+      n.appendChild(dot); n.appendChild(document.createTextNode(s.name));
       const m = el('div', 'm', `${s.bucket}${s.prefix ? '/' + s.prefix : ''}`);
       item.appendChild(n); item.appendChild(m);
       item.onclick = () => selectStorage(s.id);
