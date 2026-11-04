@@ -356,6 +356,65 @@ func requireStorage(w http.ResponseWriter, r *http.Request, capability string) (
 	return s, userID, true
 }
 
+// storageExport is the on-the-wire shape of a storage in a configuration export. The secret is
+// only present when the operator asked for a secrets export (password and step-up gated).
+type storageExport struct {
+	Storage
+	Secret string `json:"secret,omitempty"`
+}
+
+// exportStorages lists the user's storages for the configuration export.
+func exportStorages(userID int, withSecrets bool) []storageExport {
+	list := storagesForUser(userID)
+	out := make([]storageExport, 0, len(list))
+	for _, s := range list {
+		e := storageExport{Storage: s}
+		e.SecretSet = s.SecretSet
+		if withSecrets {
+			e.Secret = decryptValue(s.Secret)
+		}
+		e.Secret = strings.TrimSpace(e.Secret)
+		out = append(out, e)
+	}
+	return out
+}
+
+// importStorages adds the storages of an imported configuration. A storage whose name already
+// exists is skipped, and nothing is preflighted: an import must work while the endpoint is
+// temporarily unreachable.
+func importStorages(userID int, in []storageExport) (added, skipped int) {
+	now := time.Now().UTC().Format(time.RFC3339)
+	for _, e := range in {
+		s := e.Storage
+		s.Secret = e.Secret
+		if err := validateStorage(&s, userID); err != nil {
+			skipped++
+			continue
+		}
+		var n int
+		db.QueryRow(`SELECT COUNT(1) FROM storages WHERE user_id=? AND name=?`, userID, s.Name).Scan(&n)
+		if n > 0 {
+			skipped++
+			continue
+		}
+		stored := ""
+		if s.Secret != "" {
+			stored = encryptValue(s.Secret)
+		}
+		if _, err := db.Exec(`INSERT INTO storages (user_id, name, kind, endpoint, region, bucket, prefix, path_style,
+			access_key, secret, ca_fingerprint, sse, allow_write, allow_delete, allow_upload, max_object_mb, created_at, updated_at)
+			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+			userID, s.Name, s.Kind, s.Endpoint, s.Region, s.Bucket, s.Prefix, boolInt(s.PathStyle),
+			s.AccessKey, stored, s.CAFingerprint, s.SSE, boolInt(s.AllowWrite), boolInt(s.AllowDelete),
+			boolInt(s.AllowUpload), s.MaxObjectMB, now, now); err != nil {
+			skipped++
+			continue
+		}
+		added++
+	}
+	return added, skipped
+}
+
 // s3ErrorStatus maps a provider error to the answer the browser should see, so a stale etag
 // is a 409 the editor can explain and a missing key is a 404.
 func s3ErrorStatus(err error) int {

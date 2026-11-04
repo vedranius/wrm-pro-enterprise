@@ -238,6 +238,88 @@ func TestStorageTextKeepsBOMAndLineEndings(t *testing.T) {
 	}
 }
 
+func TestStorageDeleteRequiresStepUp(t *testing.T) {
+	u, stub, id := storageTestEnv(t, "storage-stepup", func(b map[string]interface{}) { b["allow_delete"] = true })
+	stub.put("team-a/x.txt", []byte("x"))
+	restore := func() { setSetting("require_step_up", "0") }
+	t.Cleanup(restore)
+	if _, err := setSetting("require_step_up", "1"); err != nil {
+		t.Fatal(err)
+	}
+	db.Exec(`UPDATE auth_sessions SET step_up_at='2000-01-01T00:00:00Z' WHERE user_id=?`, u.userID)
+
+	req, _ := http.NewRequest("DELETE", u.srv.URL+"/api/storages/"+strconv.Itoa(id)+"/object?key=x.txt", nil)
+	req.AddCookie(u.cookie)
+	req.Header.Set("X-WRM-Request", "1")
+	req.Header.Set("Origin", u.srv.URL)
+	req.Header.Set("X-WRM-Confirm", "delete")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusForbidden || !strings.Contains(string(body), `"step_up":true`) {
+		t.Fatalf("stale confirmation: %d %s", resp.StatusCode, body)
+	}
+	db.Exec(`UPDATE auth_sessions SET step_up_at=? WHERE user_id=?`, nowRFC(), u.userID)
+	req, _ = http.NewRequest("DELETE", u.srv.URL+"/api/storages/"+strconv.Itoa(id)+"/object?key=x.txt", nil)
+	req.AddCookie(u.cookie)
+	req.Header.Set("X-WRM-Request", "1")
+	req.Header.Set("Origin", u.srv.URL)
+	req.Header.Set("X-WRM-Confirm", "delete")
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("fresh confirmation: %d", resp.StatusCode)
+	}
+}
+
+func TestStorageExportRedactsSecretsAndImport(t *testing.T) {
+	u, _, _ := storageTestEnv(t, "storage-export", nil)
+
+	req, _ := http.NewRequest("GET", u.srv.URL+"/api/config/export", nil)
+	req.AddCookie(u.cookie)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("export: %d", resp.StatusCode)
+	}
+	if strings.Contains(string(raw), "secret-storage-key") {
+		t.Fatal("the export contains the secret key")
+	}
+	if !strings.Contains(string(raw), `"storages"`) {
+		t.Fatal("the export has no storages section")
+	}
+
+	// An import does not preflight: the endpoint may be unreachable while restoring.
+	payload := map[string]interface{}{
+		"folders": []interface{}{}, "connections": []interface{}{},
+		"storages": []map[string]interface{}{{
+			"name": "imported", "endpoint": "http://127.0.0.1:1", "region": "us-east-1",
+			"bucket": "imported-bucket", "access_key": "AK", "secret": "SK", "path_style": true,
+		}},
+	}
+	var res map[string]int
+	if code := u.jsonDo("POST", "/api/config/import", payload, &res); code != http.StatusOK {
+		t.Fatalf("import: %d", code)
+	}
+	if res["storages"] != 1 {
+		t.Fatalf("import result: %+v", res)
+	}
+	// A second import skips the duplicate instead of failing.
+	if code := u.jsonDo("POST", "/api/config/import", payload, &res); code != http.StatusOK || res["storages_skipped"] != 1 {
+		t.Fatalf("second import: %d %+v", code, res)
+	}
+}
+
 func TestStorageObjectRangeAndListing(t *testing.T) {
 	u, stub, id := storageTestEnv(t, "storage-range", nil)
 	payload := []byte("0123456789abcdef")

@@ -259,6 +259,9 @@ func storageDeleteObject(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "Deleting needs an explicit confirmation", http.StatusBadRequest)
 		return
 	}
+	if !requireStepUp(w, r, "storage.delete") {
+		return
+	}
 	key, ok := storageQueryKey(w, r)
 	if !ok {
 		return

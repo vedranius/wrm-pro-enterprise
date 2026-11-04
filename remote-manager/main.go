@@ -2712,7 +2712,7 @@ func apiExportHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Content-Disposition", attachmentHeader("wrm-config-"+AppVersion+".json"))
 	json.NewEncoder(w).Encode(map[string]interface{}{"version": AppVersion, "with_secrets": withSecrets, "folders": folders, "connections": conns,
-		"tunnels": loadTunnelDefs("user_id=?", userID), "snippets": loadSnippets("user_id=?", userID), "proxies": exportProxies(userID, withSecrets),
+		"tunnels": loadTunnelDefs("user_id=?", userID), "snippets": loadSnippets("user_id=?", userID), "proxies": exportProxies(userID, withSecrets), "storages": exportStorages(userID, withSecrets),
 		"bookmarks": loadBookmarks("user_id=?", userID)})
 }
 
@@ -2726,12 +2726,13 @@ func apiImportHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var payload struct {
-		Folders     []Folder      `json:"folders"`
-		Connections []Connection  `json:"connections"`
-		Tunnels     []tunnelDef   `json:"tunnels"`
-		Snippets    []Snippet     `json:"snippets"`
-		Proxies     []proxyExport `json:"proxies"`
-		Bookmarks   []Bookmark    `json:"bookmarks"`
+		Folders     []Folder        `json:"folders"`
+		Connections []Connection    `json:"connections"`
+		Tunnels     []tunnelDef     `json:"tunnels"`
+		Snippets    []Snippet       `json:"snippets"`
+		Proxies     []proxyExport   `json:"proxies"`
+		Bookmarks   []Bookmark      `json:"bookmarks"`
+		Storages    []storageExport `json:"storages"`
 	}
 	if !decodeImportJSON(w, r, &payload) {
 		return
@@ -2958,8 +2959,9 @@ func apiImportHandler(w http.ResponseWriter, r *http.Request) {
 		notifySnippetsChanged(userID, false)
 	}
 	bookmarksImported := importBookmarks(userID, payload.Bookmarks, oldFolders, newIDs)
-	auditLog(r, userID, "config.imported", "", map[string]int{"connections": imported, "skipped": skipped, "tunnels": tunnelsImported, "snippets": snippetsImported, "proxies": proxiesImported, "bookmarks": bookmarksImported})
-	jsonOK(w, map[string]int{"imported": imported, "skipped": skipped, "tunnels": tunnelsImported, "snippets": snippetsImported, "proxies": proxiesImported, "bookmarks": bookmarksImported})
+	storagesImported, storagesSkipped := importStorages(userID, payload.Storages)
+	auditLog(r, userID, "config.imported", "", map[string]int{"connections": imported, "skipped": skipped, "tunnels": tunnelsImported, "snippets": snippetsImported, "proxies": proxiesImported, "bookmarks": bookmarksImported, "storages": storagesImported})
+	jsonOK(w, map[string]int{"imported": imported, "skipped": skipped, "tunnels": tunnelsImported, "snippets": snippetsImported, "proxies": proxiesImported, "bookmarks": bookmarksImported, "storages": storagesImported, "storages_skipped": storagesSkipped})
 }
 
 // ─── EVENTS WS ───────────────────────────────────────
