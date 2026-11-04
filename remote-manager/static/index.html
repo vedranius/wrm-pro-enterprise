@@ -1850,6 +1850,7 @@ details.help summary { cursor: pointer; color: var(--accent); font-weight: 600; 
       <button class="btn-top" id="btn-tools" onclick="openToolsMenu(this)" data-i18n-title="tools_menu_t" title="Tools: network tools and broadcast input" aria-haspopup="menu"><span>🧰</span><span class="lbl" data-i18n="tools_lbl">Tools</span><span class="tools-bc" id="tools-bc" style="display:none;">📣</span></button>
       <button class="btn-top" id="btn-monitoring" onclick="openMonitoring()" title="Monitoring"><span>📊</span><span class="lbl" data-i18n="mon_title">Monitoring</span></button>
       <button class="btn-top" id="btn-git" onclick="openGit()" title="Git"><span>⎇</span><span class="lbl" data-i18n="git_lbl">Git</span></button>
+      <button class="btn-top" id="btn-storages" onclick="openStorages()" title="Storages" data-i18n-title="stg_title"><span>🗄</span><span class="lbl" data-i18n="stg_title">Storages</span></button>
       <button class="btn-top icon-only" id="btn-shares" onclick="openManageShares()" data-i18n-title="shares_lbl" title="Shares" aria-label="Shares"><span>🤝</span><span class="lbl" data-i18n="shares_lbl">Shares</span></button>
       <button class="btn-top" id="btn-vault" onclick="openVault()" title="SSH keys &amp; credentials"><span>🔑</span><span class="lbl" data-i18n="vault_lbl">Keys</span><span class="tun-badge" id="vault-badge" style="display:none;"></span></button>
       <span class="tb-group" id="tb-canvas-grp" role="group">
@@ -3293,6 +3294,7 @@ const LANGS = {
     username:'Username', password:'Password',
     search_connections:'🔍 Search connections...',
     new_folder:'📁 Folder', new_connection:'+ Connection',
+    stg_title:'Storages',
     first_run_title:'Welcome to WRM PRO',
     first_run_text:'Add your first connection (SSH, RDP, VNC or a web link). Folders, snippets and an imported configuration from another client work too.',
     my_connections:'MY CONNECTIONS', shared_with_me:'SHARED WITH ME',
@@ -3386,6 +3388,7 @@ const LANGS = {
     username:'Korisničko ime', password:'Lozinka',
     search_connections:'🔍 Traži veze...',
     new_folder:'📁 Mapa', new_connection:'+ Veza',
+    stg_title:'Storage',
     first_run_title:'Dobro došli u WRM PRO',
     first_run_text:'Dodajte prvu vezu (SSH, RDP, VNC ili web poveznicu). Mape, snippetovi i uvezena konfiguracija iz drugog klijenta također rade.',
     my_connections:'MOJE VEZE', shared_with_me:'PODIJELJENO SA MNOM',
@@ -10908,6 +10911,22 @@ async function saveNotes() {
 let toolsTab = 'ports';
 
 // Git workspace: its code (static/git.js) is loaded the first time it is opened.
+let storagesLoading = null;
+// Storages lives in its own script so the 1.2 MB page does not grow by it; the module adds
+// its own translations and styles when it loads.
+function openStorages() {
+  closeDrawers();
+  if (window.wrmStorages) return window.wrmStorages.open();
+  if (!storagesLoading) storagesLoading = new Promise((ok, fail) => {
+    const s = document.createElement('script');
+    s.src = '/static/storages.js';
+    s.onload = ok;
+    s.onerror = () => { storagesLoading = null; fail(new Error(t('git_load_failed'))); };
+    document.head.appendChild(s);
+  });
+  return storagesLoading.then(() => window.wrmStorages && window.wrmStorages.open())
+    .catch(() => showToast(t('git_load_failed'), 'error'));
+}
 let gitLoading = null;
 function loadGitModule() {
  if (window.gitWorkspace && window.gitClient) return Promise.resolve();
