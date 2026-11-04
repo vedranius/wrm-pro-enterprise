@@ -36,13 +36,18 @@ two would weaken both.
 
 ### Scope of v1
 
-Add one S3-compatible endpoint per storage, browse it, preview and download objects, upload,
-edit text objects, and delete only when the storage explicitly allows it.
+Add one S3-compatible endpoint per storage, browse it by prefix, inspect and **edit small text
+objects** (JSON, configs, subtitles, scripts), play a video object in the browser, download an
+object, and delete objects only when the storage explicitly allows it.
 
-**Non-goals for v1:** bucket administration (create/delete bucket, bucket policies, CORS),
-object versioning UI, lifecycle rules, cross-region replication, presigned browser uploads,
-Azure Blob / Google Cloud Storage, STS or instance-role credentials, S3 through jump hosts or
-proxies.
+WRM is not a transfer tool for this feature: it moves kilobytes, not gigabytes. The typical
+jobs are fixing a JSON config, correcting a subtitle line, deleting a stale file and checking
+that an uploaded MP4 is the right one.
+
+**Non-goals for v1:** bulk upload, drag-and-drop of large files, multipart upload, transcoding
+or HLS packaging, bucket administration (create/delete bucket, policies, CORS), object
+versioning UI, lifecycle rules, cross-region replication, presigned browser URLs, Azure Blob /
+Google Cloud Storage, STS or instance-role credentials, S3 through jump hosts or proxies.
 
 ### Data model (additive)
 
@@ -63,7 +68,8 @@ CREATE TABLE storages (
   sse             TEXT    NOT NULL DEFAULT '',   -- '' | AES256 | aws:kms
   allow_write     INTEGER NOT NULL DEFAULT 1,
   allow_delete    INTEGER NOT NULL DEFAULT 0,
-  max_object_mb   INTEGER NOT NULL DEFAULT 512,
+  allow_upload    INTEGER NOT NULL DEFAULT 0,    -- small files only; off by default
+  max_object_mb   INTEGER NOT NULL DEFAULT 16,   -- edit/save ceiling, not a transfer budget
   created_at      TEXT    NOT NULL,
   updated_at      TEXT    NOT NULL,
   UNIQUE(user_id, name)
@@ -90,8 +96,9 @@ CREATE TABLE storage_shares (
 
 | Action | Owner | Admin | AI (MCP scope) | Share token |
 |---|---|---|---|---|
-| list, read, preview, download | yes | yes | `storage_read` | yes (inside share prefix) |
-| upload, edit, rename | `allow_write` | `allow_write` | `storage_write` + approval | `can_write` |
+| list, read, preview, play, download | yes | yes | `storage_read` | yes (inside share prefix) |
+| edit, save, rename | `allow_write` | `allow_write` | `storage_write` + approval | `can_write` |
+| upload a small new file | `allow_upload` | `allow_upload` | `storage_write` + approval | `can_write` |
 | delete | `allow_delete` + confirmation | same | `storage_delete` (off by default) | `can_delete` |
 | add / edit / remove storage | yes | yes | no | no |
 
@@ -109,19 +116,61 @@ DELETE /api/storages/{id}                       remove; revokes its shares
 POST   /api/storages/{id}/test                  re-check credentials and bucket
 
 GET    /api/storages/{id}/objects?prefix=&cursor=
-GET    /api/storages/{id}/object?key=           GET, HEAD with Range support
-PUT    /api/storages/{id}/object?key=           raw body or multipart, If-Match on edit
+GET    /api/storages/{id}/object?key=           GET, HEAD with Range; ?inline=1 for media
+PUT    /api/storages/{id}/object?key=           save ≤ max_object_mb, If-Match on edit
 POST   /api/storages/{id}/dir?prefix=           create an empty "folder"
 POST   /api/storages/{id}/move                  {from, to, overwrite}
 DELETE /api/storages/{id}/object?key=           needs allow_delete + X-WRM-Confirm
 GET    /api/storages/{id}/preview?key=          text / image / PDF, as the file manager
 ```
 
+`GET /object` streams with `Range` support and `Accept-Ranges: bytes`, which is what the
+browser needs to play an MP4 and to jump inside it. `?inline=1` sets
+`Content-Disposition: inline` for playable types; everything else is an attachment. No
+transcoding and no HLS: the browser plays what the bucket stores, so a codec it does not
+support (typically HEVC) is reported as such instead of being converted on the server.
+
 `GET /objects` uses `ListObjectsV2` with `delimiter=/`: common prefixes become folders,
-`NextContinuationToken` becomes the cursor. `PUT` streams to the client (multipart above
-16 MiB, 8 MiB parts) and never buffers the whole object in memory. `DELETE` of a prefix is not
-offered in v1: one object per call, `DeleteObjects` only for a multi-select the user
-confirmed.
+`NextContinuationToken` becomes the cursor. `PUT` accepts only bodies up to `max_object_mb`
+(16 MB by default): this feature moves kilobytes, not backups, so there is no multipart and
+nothing is buffered in memory. `DELETE` of a prefix is not offered in v1: one object per call,
+`DeleteObjects` only for a multi-select the user confirmed.
+
+### Editor
+
+The editor is the centre of the feature, not an afterthought: what people change in a bucket
+is a JSON config, a subtitle file or a small script.
+
+- **Formats with a purpose-built mode:** JSON (pretty-print, validation with line/column of the
+  error), YAML, XML, INI/conf, shell/Go/Python/JS (plain syntax), SRT, WebVTT, ASS/SSA.
+  Everything else opens as plain text if it is valid UTF-8, and stays read-only otherwise.
+- **Subtitle checks:** line numbering, timestamp sanity (monotonic, `-->`, milliseconds), a
+  duplicate-index warning for SRT, and "renumber" / "shift timestamps by…" actions that run
+  on the text before saving.
+- **Encoding and newlines are preserved.** UTF-8 with or without BOM, CRLF vs LF: a save
+  writes back the same shape it read, otherwise every diff in the project turns into noise.
+  A file that is not valid UTF-8 opens read-only with an explicit message instead of being
+  mangled.
+- **Optimistic concurrency.** Saving sends `If-Match: <etag>`; a changed object answers 409
+  and the UI offers "reload" or "overwrite anyway" (an explicit second action).
+- **Limits.** Editing is capped (default 2 MB, `max_edit_kb`), with a clear message instead of
+  a frozen tab. Formatting and validation run in the browser; the server stores bytes.
+- Nothing is executed, rendered or interpreted server-side: the editor is text in, text out.
+
+### Media and subtitles
+
+- **Playback** uses the browser's `<video>` against `GET /object?inline=1`, which streams with
+  `Range` support, so seeking works and the server never loads the file. `media-src 'self'` in
+  the CSP already allows it.
+- **Codecs are the provider's and the browser's business.** H.264/AAC plays; HEVC usually does
+  not, and the UI says so with a download link rather than pretending. No transcoding, no HLS,
+  no thumbnails in v1 (an optional `ffprobe`-based metadata line is a later nicety).
+- **Subtitles next to the video.** If an object `x.mp4` has a sibling `x.srt`, `x.vtt` or
+  `x.ass`, the player offers it as a track. WebVTT is native; SRT and ASS/SSA are converted to
+  VTT **in the browser** for display only, so the file on the bucket is never touched. Editing
+  the subtitle opens the editor on the original format.
+- Sizes: a 2 GB MP4 plays fine because it is streamed; only text objects are ever read
+  whole.
 
 ### Security impact
 
@@ -138,26 +187,37 @@ New outbound network egress and new long-lived secrets. Controls:
 5. **Delete gate.** `allow_delete` is off by default; a delete request must also carry
    `X-WRM-Confirm: delete`, is audited with key and size, and can require a step-up
    confirmation (2FA) when the installation uses one.
-6. **Resource limits.** Per-object cap (`max_object_mb`), request body limits, a per-storage
-   rate limit (60 operations/minute/user), 30 s for metadata calls, 10 min for transfers,
-   multipart abort on failure.
-7. **No indirect fetch.** No "import from URL", no presigned URLs in v1: the browser always
+6. **Resource limits.** Writes are capped (`max_object_mb`, default 16 MB) and edits tighter
+   still (`max_edit_kb`, default 2 MB); request bodies are limited, a per-storage rate limit
+   (60 operations/minute/user) applies, metadata calls time out after 30 s and a stream after
+   10 minutes.
+7. **Dangerous content is never rendered in the WRM origin.** HTML, SVG, XML, JS and anything
+   the browser could execute are served as `text/plain` or as an attachment, never inline: an
+   SVG or HTML preview would run with the signed-in user's session. The existing preview rules
+   for remote files are reused, not re-invented.
+8. **The editor does not execute anything.** It reads text and writes text; validation and
+   formatting run in the browser, the server only checks size and etag.
+9. **No indirect fetch.** No "import from URL", no presigned URLs in v1: the browser always
    goes through WRM, so the object ACL never has to be public.
-8. **Shares.** Tokens are hashed at rest, prefix-scoped, read-only by default, with an
-   expiry; a share never reveals the storage credentials.
-9. **AI/MCP.** Separate scopes (`storage_read`, `storage_write`, `storage_delete`) so an AI
-   connection approved for servers does not silently gain buckets; writes ask for approval,
-   deletes are refused unless the scope is granted.
+10. **Shares.** Tokens are hashed at rest, prefix-scoped, read-only by default, with an
+    expiry; a share never reveals the storage credentials.
+11. **AI/MCP.** Separate scopes (`storage_read`, `storage_write`, `storage_delete`) so an AI
+    connection approved for servers does not silently gain buckets; writes ask for approval,
+    deletes are refused unless the scope is granted.
 
 ### UI
 
 - A new left-nav section **Storages**, under Connections, with its own empty state.
 - Add/edit dialog: name, endpoint (presets for Hetzner, DigitalOcean, AWS, MinIO), region,
   bucket, prefix, path-style (auto for non-AWS), access key, secret, **Test connection**,
-  and the two capability switches. Delete is presented as what it is: permanent.
+  and the capability switches (edit, small upload, delete). Delete is presented as what it is:
+  permanent.
 - A storage window reuses the file-manager shell: prefix breadcrumb, list (size, modified),
-  preview, download, drag-and-drop upload, new folder, rename, editor with `If-Match` save
-  ("the file changed in the meantime" instead of a silent overwrite).
+  preview, **player for video objects**, download, new folder, rename, delete (when allowed)
+  and the **editor** with `If-Match` save ("the file changed in the meantime" instead of a
+  silent overwrite).
+- Upload is a small "add a file" action (default off), not a transfer manager: a progress
+  bar for a 3 MB JSON is enough; there is no queue, no resume and no multipart.
 - Actions the storage does not allow are absent, not merely disabled.
 
 ### Compatibility
