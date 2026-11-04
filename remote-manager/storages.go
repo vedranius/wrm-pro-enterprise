@@ -223,8 +223,46 @@ func refreshStorageStatus() {
 		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 		err = c.headBucket(ctx)
 		cancel()
+		prevOK, _, prevAt := storageStatusFor(s.ID)
 		setStorageStatus(s.ID, err)
+		if event := storageStatusEvent(prevOK, prevAt != "", err); event != "" {
+			notifyStorageEvent(s, event, err)
+		}
 	}
+}
+
+// storageStatusEvent names the transition, so an alert fires once per change and not on every
+// check.
+func storageStatusEvent(prevOK, had bool, err error) string {
+	switch {
+	case had && prevOK && err != nil:
+		return "storage.down"
+	case had && !prevOK && err == nil:
+		return "storage.up"
+	case !had && err != nil:
+		return "storage.down"
+	}
+	return ""
+}
+
+// notifyStorageEvent tells the owner that a storage stopped answering (or recovered).
+func notifyStorageEvent(s Storage, event string, err error) {
+	notifyUser(s.UserID, event, func(lang string) (string, string) {
+		if event == "storage.up" {
+			if lang == "hr" {
+				return "Storage je ponovno dostupan", s.Name + " (" + s.Bucket + ") odgovara."
+			}
+			return "Storage is reachable again", s.Name + " (" + s.Bucket + ") answers again."
+		}
+		msg := ""
+		if err != nil {
+			msg = err.Error()
+		}
+		if lang == "hr" {
+			return "Storage nije dostupan", s.Name + " (" + s.Bucket + "): " + msg
+		}
+		return "Storage is not reachable", s.Name + " (" + s.Bucket + "): " + msg
+	})
 }
 
 // storageStatusLoop keeps the status fresh without blocking a request.

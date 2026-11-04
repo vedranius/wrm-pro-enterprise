@@ -320,6 +320,27 @@ func TestStorageExportRedactsSecretsAndImport(t *testing.T) {
 	}
 }
 
+func TestStorageStatusTransitions(t *testing.T) {
+	down := &s3Error{Code: "AccessDenied", Status: 403}
+	cases := []struct {
+		prevOK, had bool
+		err         error
+		want        string
+	}{
+		{true, true, nil, ""},
+		{true, true, down, "storage.down"},
+		{false, true, nil, "storage.up"},
+		{false, true, down, ""},
+		{false, false, down, "storage.down"},
+		{false, false, nil, ""},
+	}
+	for _, c := range cases {
+		if got := storageStatusEvent(c.prevOK, c.had, c.err); got != c.want {
+			t.Errorf("prevOK=%v had=%v err=%v: %q, want %q", c.prevOK, c.had, c.err, got, c.want)
+		}
+	}
+}
+
 func TestStorageStatusRefresh(t *testing.T) {
 	u, stub, id := storageTestEnv(t, "storage-status", nil)
 	_ = stub
