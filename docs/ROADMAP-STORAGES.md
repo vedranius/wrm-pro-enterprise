@@ -1,8 +1,13 @@
 # WRM PRO - roadmap: Storages (S3)
 
 **Cilj:** S3-kompatibilni objektni storage kao zaseban dio proizvoda (**Storages**), odvojen od
-Connections: dodavanje, pregled, preview, download, upload i uređivanje, uz brisanje samo kad
-je izričito dopušteno. Sve unutar WRM-a: dozvole, audit, limiti, AI/MCP.
+Connections: dodavanje, pregled po prefiksima, preview, reprodukcija videa, download, **uređivanje
+malih tekstualnih objekata** (JSON, konfiguracije, titlovi) i brisanje samo kad je izričito
+dopušteno. Sve unutar WRM-a: dozvole, audit, limiti, AI/MCP.
+
+**Što ovo nije:** transfer alat. Kroz WRM se ne šalju veliki fileovi; tipičan posao je ispraviti
+JSON, popraviti liniju titla, obrisati zastarjeli objekt i provjeriti je li MP4 onaj pravi.
+Zato nema multiparta, nema „upload mape”, nema transkodiranja.
 
 **Izvor istine:** `wrm-pro-enterprise` (RFC `docs/rfcs/0008-storages-s3.md`). Javno izdanje
 (`web-browser-RDM-public`) dobiva iste promjene; svaki red ima oba commita.
@@ -15,33 +20,36 @@ i `Refs #19` (public: `Refs #155`).
 **Feature flag:** `storages_enabled` (default `off`), vidljivo na security levelu
 `business`/`enterprise`.
 
-**Procjena cjeline:** MVP (STG-01 … STG-06) **≈ 21 radni dan**; ostatak (STG-07 … STG-10)
-**+10 dana**. Redoslijed je takav da se nakon STG-06 može izdati upotrebljiv v14.1.0.
+**Procjena cjeline:** MVP (STG-01 … STG-08) **≈ 26 radnih dana**; ostatak (STG-09 … STG-12)
+**+10 dana**. Nakon STG-08 može se izdati upotrebljiv v14.1.0.
 
 ## Faze i verzije
 
 | Faza | Stavke | Verzija (enterprise / public) |
 |---|---|---|
 | A - temelj | STG-01, STG-02 | v14.1.0-alpha1 / v13.15.0-alpha1 (neobjavljeno) |
-| B - backend | STG-03, STG-04 | v14.1.0-alpha2 / v13.15.0-alpha2 |
-| C - sigurnost | STG-05, STG-06 | v14.1.0-beta / v13.15.0-beta |
-| D - izdanje | STG-07, STG-08, STG-09 | **v14.1.0 / v13.15.0** |
-| E - otvrdnjavanje | STG-10 | v14.1.1 |
+| B - backend i pregled | STG-03, STG-04 | v14.1.0-alpha2 / v13.15.0-alpha2 |
+| C - editor i video | STG-05, STG-06 | v14.1.0-beta / v13.15.0-beta |
+| D - sigurnost i izdanje | STG-07, STG-08 | **v14.1.0 / v13.15.0** |
+| E - integracije | STG-09, STG-10, STG-11 | v14.2.0 / v13.16.0 |
+| F - otvrdnjavanje | STG-12 | v14.2.1 |
 
 ## Stavke
 
 | ID | Faza | Što | Popravak | Test | Status | Dani |
 |----|------|-----|----------|------|--------|------|
-| STG-01 | A | Nema modela za storage | tablice `storages`, `storage_shares`; `ensureTable`; `encryptValue` za secret; audit `storage.created/updated/deleted`; setting `storages_enabled` | `TestStorageCRUDAndSecretMasking`: secret se nikad ne vraća, audit zapisan, dvije tablice nastaju na startu | todo | 3 |
-| STG-02 | A | Nema S3 klijenta | `storage_s3.go`: SigV4, `ListObjectsV2`, `GetObject` (Range), `PutObject` (multipart >16 MiB), `HeadObject`, `CopyObject`, `DeleteObject(s)`, retry/timeout, mapiranje grešaka (AccessDenied, SignatureDoesNotMatch, NoSuchBucket) | `TestS3ClientAgainstStub`: list/range/get/put/multipart/copy/delete + potpis provjeren na stubu | todo | 4 |
-| STG-03 | A/B | Nema ruta | `/api/storages…` (vidi RFC), `requireStorage(cap)`, konfinacija prefiksa, validacija ključa, limiti tijela, rate limit, `If-Match` | `TestStorageRoutesRespectCapabilities`: read-only storage odbija PUT/DELETE (403); ključ s `..` odbijen; prefiks se ne može napustiti | todo | 4 |
-| STG-04 | B | Nema UI | sekcija **Storages** (nav, lista, empty state), modal s presetima (Hetzner/DO/AWS/MinIO), **Test connection**, prozor s breadcrumbom, preview, download, drag&drop upload, novi folder, rename, editor sa `If-Match` | `node tools/check-ui.js`; ručna provjera toka (dodavanje → pregled → edit → upload) | todo | 5 |
-| STG-05 | C | Brisanje bez zaštite | `allow_delete` (default off) + `X-WRM-Confirm: delete` + step-up kad je 2FA uključen + audit s ključem i veličinom; UI skriva akciju | `TestStorageDeleteGate`: bez dozvole 403, bez headera 400, s dozvolom 200 i audit; step-up 403 bez svježe potvrde | todo | 2 |
-| STG-06 | C | Nema testova | lokalni S3 stub (`httptest`) za sve operacije; TLS pin test (self-signed + `ca_fingerprint`); test da secret ne izlazi u API/export/log | `go test -race -run TestStorage` zeleno; stub pokriva multipart i Range | todo | 3 |
-| STG-07 | D | AI/MCP ne vidi storage | scopeovi `storage_read/write/delete`, alati `storage_list/read/write/delete`, read-deny lista (`.env`, `*.pem`), write kroz approval, delete odbijen bez scopea | `TestStorageAIToolsAndScopes`: read prolazi, write traži approval, delete bez scopea odbijen | todo | 3 |
-| STG-08 | D | Nema dijeljenja | share link na prefiks: token hash, `can_write`/`can_delete`, expiry, read-only default; revoke pri brisanju storagea | `TestStorageShareToken`: token otvara samo svoj prefiks, istekli 410, revoke 401 | todo | 3 |
-| STG-09 | D | Nema izvoza ni statusa | config export/import s `storages` (secreti redigirani, pri importu se traže ponovno); status check = `HeadBucket`; notifikacija kad storage padne | `TestStorageExportRedactsSecrets`, `TestStorageStatusCheck` | todo | 2 |
-| STG-10 | E | Otvrdnjavanje | update `docs/THREAT-MODEL.md`, PSIRT pregled, provjera SSRF/TLS/deletion puta, pentest scenariji, dokumentacija za operatere | sigurnosni pregled potpisan; checklist u RFC-u odštikliran | todo | 2 |
+| STG-01 | A | Nema modela za storage | tablice `storages`, `storage_shares`; `ensureTable`; `encryptValue` za secret; audit `storage.created/updated/deleted`; setting `storages_enabled` | `TestStorageCRUDAndSecretMasking`: secret se nikad ne vraća, audit zapisan, tablice nastaju na startu | todo | 2 |
+| STG-02 | A | Nema S3 klijenta | `storage_s3.go`: SigV4, `ListObjectsV2`, `GetObject` (Range), `HeadObject`, `PutObject` (limit tijela), `CopyObject`, `DeleteObject(s)`, retry/timeout, mapiranje grešaka | `TestS3ClientAgainstStub`: list/range/get/put/copy/delete + provjera potpisa na stubu | todo | 3 |
+| STG-03 | B | Nema ruta ni granica | `/api/storages…`, `requireStorage(cap)`, konfinacija prefiksa, validacija ključa, limiti tijela, rate limit, `If-Match`/409 | `TestStorageRoutesRespectCapabilities`: read-only odbija PUT/DELETE; ključ s `..` odbijen; prefiks se ne može napustiti | todo | 4 |
+| STG-04 | B | Nema UI | sekcija **Storages** (nav, lista, empty state), modal s presetima (Hetzner/DO/AWS/MinIO), **Test connection**, prozor: breadcrumb, lista, preview, download, „dodaj datoteku”, novi folder, rename, akcija brisanja | `node tools/check-ui.js`; ručni tok: dodaj → pregledaj → download → obriši | todo | 4 |
+| STG-05 | C | Nema editora | editor: JSON (format + validacija s linijom/kolonom), YAML/XML/INI, skripte, **SRT/VTT/ASS/SSA** s provjerom vremena i „pomakni titlove”; čuvanje encodiga i CRLF/LF; `If-Match` uz „reload / overwrite”; limit `max_edit_kb` (2 MB) | `TestStorageEditorSave`: BOM/CRLF ostaju, 409 na promijenjen etag, 413 iznad limita; `TestSubtitleChecks`: monotonost i renumber | todo | 5 |
+| STG-06 | C | Nema videa ni titlova | player preko `GET /object?inline=1` (Range, seek); `media-src 'self'`; poruka za nepodržani kodek; bočni `x.srt`/`x.vtt`/`x.ass` kao track (SRT/ASS → VTT **u browseru**, izvorni file se ne dira) | `TestStorageRangeStreaming`: 206, `Content-Range`, seek preko granice dijela; ručna provjera reprodukcije + titla | todo | 3 |
+| STG-07 | D | Brisanje bez zaštite | `allow_delete` (default off) + `X-WRM-Confirm: delete` + step-up kad je 2FA uključen + audit (ključ, veličina); multi-select uz dodatnu potvrdu; UI skriva akciju | `TestStorageDeleteGate`: bez dozvole 403, bez headera 400, s dozvolom 200 i audit; step-up 403 bez svježe potvrde | todo | 2 |
+| STG-08 | D | Nema testova ni dokumentacije | S3 stub za sve operacije; TLS pin test; „secret ne izlazi” (API, audit, export, log); README sekcija za operatere | `go test -race -run TestStorage` zeleno; stub pokriva Range, 409 i greške providera | todo | 3 |
+| STG-09 | E | AI/MCP ne vidi storage | scopeovi `storage_read/write/delete`, alati `storage_list/read/write/delete`, read-deny (`.env`, `*.pem`), write kroz approval, delete odbijen bez scopea | `TestStorageAIToolsAndScopes`: read prolazi, write traži approval, delete bez scopea odbijen | todo | 3 |
+| STG-10 | E | Nema dijeljenja | share link na prefiks: token hash, `can_write`/`can_delete`, expiry, read-only default; revoke pri brisanju storagea | `TestStorageShareToken`: token otvara samo svoj prefiks, istekli 410, revoke 401 | todo | 3 |
+| STG-11 | E | Nema izvoza ni statusa | config export/import s `storages` (secreti redigirani, pri importu se traže ponovno); status check = `HeadBucket`; notifikacija kad storage padne | `TestStorageExportRedactsSecrets`, `TestStorageStatusCheck` | todo | 2 |
+| STG-12 | F | Otvrdnjavanje | update `docs/THREAT-MODEL.md`, PSIRT pregled, provjera SSRF/TLS/preview/deletion puta, pentest scenariji | sigurnosni pregled potpisan; checklist iz RFC-a odštikliran | todo | 2 |
 
 ## Definicija "done" (po stavci)
 
@@ -58,8 +66,11 @@ i `Refs #19` (public: `Refs #155`).
 - [ ] `prefix` se ne može napustiti nijednim ključem (`..`, Unicode normalizacija, `%2e%2e`).
 - [ ] Endpoint prolazi `guardEgressURL`; LAN/MiniIO traži `egress_allow_hosts`.
 - [ ] TLS pin radi; bez pina self-signed cert pada.
+- [ ] HTML/SVG/JS/XML se nikad ne renderiraju inline u WRM originu (samo `text/plain` ili attachment).
 - [ ] Brisanje: dozvola + potvrda + audit + step-up; UI ne nudi akciju kad nije dopuštena.
-- [ ] Rate limit i max veličina objekta rade; multipart se prekida na grešci.
+- [ ] Editor: 409 na promijenjen etag, 413 iznad limita, BOM/CRLF se čuvaju.
+- [ ] Video: Range/206, bez transkodiranja; nepodržan kodek jasno prijavljen.
+- [ ] Rate limit i max veličina objekta rade.
 - [ ] Share token: hash, prefiks, expiry, revoke.
 - [ ] AI: write traži approval, delete odbijen bez scopea; read-deny lista vrijedi.
 
@@ -67,14 +78,15 @@ i `Refs #19` (public: `Refs #155`).
 
 | Rizik | Utjecaj | Ublažavanje |
 |---|---|---|
-| Razlike među providerima (Hetzner, DO, MinIO, AWS) | neke operacije rade na jednom, ne na drugom | držati se zajedničkog podskupa (list/get/put/head/copy/delete/multipart); matrica kompatibilnosti u RFC-u |
-| Veliki objekti | RAM i prekidi | streaming, multipart 8 MiB, abort, max_object_mb |
+| Razlike među providerima (Hetzner, DO, MinIO, AWS) | neke operacije rade na jednom, ne na drugom | zajednički podskup (list/get/head/put/copy/delete); matrica kompatibilnosti u RFC-u |
+| Kodek koji browser ne podržava (HEVC) | „video se ne vidi” | jasna poruka + download; bez transkodiranja u v1 |
+| Veliki MP4 | RAM/prekidi | Range streaming, nikad se ne učitava cijeli objekt |
+| Opasni formati (SVG/HTML) | XSS u WRM originu | nikad inline; `text/plain` ili attachment; reuse postojećih preview pravila |
+| Titlovi u različitim formatima | krivo vrijeme/encoding | provjere u editoru, čuvanje BOM/CRLF, konverzija samo za prikaz |
 | Dugotrajni secrets | curenje | trezor, write-only, rotacija + podsjetnik, audit |
-| Zamjena postojećih ruta | regresija file managera | zaseban `/api/storages` namespace; ništa postojeće se ne mijenja |
-| Očekivanje "obriši mapu" | slučajno brisanje | u v1 brisanje jednog objekta uz potvrdu; brisanje prefiksa samo kroz multi-select s dodatnom potvrdom |
 
 ## Otvorena pitanja (odluka prije STG-01)
 
 1. Vidi li administrator sve storageove korisnika (kao konekcije) ili samo svoje? *Predlog: kao konekcije.*
-2. Treba li "undelete" (verzioniranje) u v2 ili je dovoljan hint providera? *Predlog: v2.*
-3. Presigned upload za velike datoteke? *Predlog: ne u v1, izmjeriti pa odlučiti.*
+2. Treba li „undelete” (verzioniranje) u v2 ili je dovoljan hint providera? *Predlog: v2.*
+3. Treba li `ffprobe` metadata linija (trajanje, rezolucija) kad je ffmpeg dostupan? *Predlog: opcionalno, van v1.*
