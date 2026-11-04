@@ -49,7 +49,7 @@ i `Refs #19` (public: `Refs #155`).
 | STG-09 | E | AI/MCP ne vidi storage | scopeovi `storage_read/write/delete`, alati `storage_list/read/write/delete`, AI read-deny lista (`.env`, `*.pem`), write samo uz scope i `allow_write`, delete uz scope + `allow_delete` + `confirm` | `TestStorageMCPTools`: read prolazi, write bez scopea odbijen, delete bez potvrde/dozvole odbijen, `.env` odbijen | done (c7f3f44) | 3 |
 | STG-10 | E | Nema dijeljenja | share link na prefiks: token hash, `can_write`/`can_delete`, expiry, read-only default; revoke pri brisanju storagea | `TestStorageShareToken`: token otvara samo svoj prefiks, istekli 410, revoke 401 | done (8ad5e42) | 3 |
 | STG-11 | E | Nema izvoza ni statusa | config export/import s `storages` (secreti redigirani, pri importu se traže ponovno); status check = `HeadBucket`; notifikacija `storage.down`/`storage.up` | `TestStorageExportRedactsSecretsAndImport`, `TestStorageStatusRefresh` | done (29ef811, e5f0369, 2dfb11e) | 2 |
-| STG-12 | F | Otvrdnjavanje | update `docs/THREAT-MODEL.md`, PSIRT pregled, provjera SSRF/TLS/preview/deletion puta, pentest scenariji | sigurnosni pregled potpisan; checklist iz RFC-a odštikliran | djelomično (threat model; PSIRT pregled ostaje) | 2 |
+| STG-12 | F | Otvrdnjavanje | update `docs/THREAT-MODEL.md`, PSIRT pregled, provjera SSRF/TLS/preview/deletion puta | `docs/security-reviews/0001-storages-s3.md` (11 provjera, 2 nalaza popravljena, rezidualni rizici prihvaćeni) | done (docs/security-reviews/0001-storages-s3.md) | 2 |
 
 ## Definicija "done" (po stavci)
 
