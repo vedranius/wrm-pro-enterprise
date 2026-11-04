@@ -54,6 +54,12 @@ func TestStorageMCPTools(t *testing.T) {
 		t.Fatal("a read-only grant wrote an object")
 	}
 
+	// The AI read-deny list also covers a storage: a secret file is never sent to the model.
+	stub.put("team-a/.env", []byte("SECRET=1"))
+	if _, err := mcpStorageRead(readOnly, map[string]interface{}{"storage": "hetzner", "key": ".env"}); err == nil {
+		t.Fatal("the AI read a .env file from the storage")
+	}
+
 	writer := &mcpGrant{ID: 4, UserID: u.userID, Mode: aiModeAsk, Scopes: []string{"storage_read", "storage_write"}}
 	write, err := mcpStorageWrite(writer, map[string]interface{}{"storage": "hetzner", "key": "new.json", "content": "{\n  \"b\": 2\n}"})
 	if err != nil {

@@ -62,6 +62,14 @@ penetration tests update it.
 | Database | SQL injection | Parameterized queries only; no string-built SQL |
 | Database | Direct filesystem access to DB | Restrictive file permissions; run under least-privilege account |
 | Database | Backup exposure | Encrypt backups; store keys separately |
+| Storages (S3) | SSRF to internal services from an admin-entered endpoint | `guardEgressURL` (metadata, link-local, optional `public_only` policy with `egress_allow_hosts`) |
+| Storages (S3) | Escaping the configured prefix and reaching the rest of the bucket | Keys are resolved inside the prefix and validated (`..`, absolute paths, control characters) before signing |
+| Storages (S3) | Credential leak through the API, logs, audit or export | Secret encrypted at rest, write-only, never serialised, redacted in audit and export |
+| Storages (S3) | Silent overwrite of an object changed elsewhere | `If-Match` on every edit, stale etag answers 409 |
+| Storages (S3) | Destructive delete by a compromised session | `allow_delete` plus `X-WRM-Confirm: delete` plus step-up when the installation enforces it; audited |
+| Storages (S3) | Active content (HTML/SVG/JS) rendered in the WRM origin | Served as `text/plain` or as an attachment, never inline |
+| Storages (S3) | AI reading or changing buckets through a server approval | Separate `storage_read/write/delete` scopes; delete needs the scope, the storage's permission, a non read-only mode and `confirm=delete` |
+| Storages (S3) | Self-signed endpoint impersonation | Optional per-storage SHA-256 certificate pin, checked in `VerifyConnection` with session tickets disabled |
 
 ## Assumptions
 

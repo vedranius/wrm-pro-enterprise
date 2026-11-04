@@ -95,6 +95,9 @@ func mcpStorageRead(g *mcpGrant, args map[string]interface{}) (map[string]interf
 	if err := validStorageKey(key); err != nil {
 		return nil, err
 	}
+	if why := aiReadDenied(key); why != "" {
+		return nil, fmt.Errorf("WRM refuses to send this file to the AI: %s", why)
+	}
 	c, err := s.clientFor()
 	if err != nil {
 		return nil, err
