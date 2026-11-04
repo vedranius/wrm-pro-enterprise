@@ -22,16 +22,6 @@ import (
 // and deleting needs allow_delete with an explicit confirmation. Everything is relative to the
 // storage prefix: a key can never address anything outside it.
 
-// storageRoute splits the part of the path after /api/storages/{id}/.
-func storageRoute(r *http.Request) []string {
-	rest := strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/storages/"), "/")
-	parts := strings.Split(rest, "/")
-	if len(parts) < 2 {
-		return nil
-	}
-	return parts[1:]
-}
-
 func storageObjectBytes(s Storage) int64 { return int64(s.MaxObjectMB) << 20 }
 
 func storageEditBytes() int64 {
