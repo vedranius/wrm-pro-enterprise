@@ -8,7 +8,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
@@ -84,12 +83,15 @@ func newS3Client(cfg s3Config) (*s3Client, error) {
 		pin := strings.ToLower(cfg.CAFingerprint)
 		// The certificate is pinned by its SHA-256 digest instead of a public CA, which is the
 		// only way to use a self-signed MinIO without trusting every certificate on the host.
+		// VerifyConnection also runs for a resumed session, so the pin cannot be bypassed by
+		// session resumption; tickets are disabled as well.
 		tlsCfg.InsecureSkipVerify = true // #nosec G402 -- replaced by the fingerprint check below
-		tlsCfg.VerifyPeerCertificate = func(raw [][]byte, _ [][]*x509.Certificate) error {
-			if len(raw) == 0 {
+		tlsCfg.SessionTicketsDisabled = true
+		tlsCfg.VerifyConnection = func(state tls.ConnectionState) error {
+			if len(state.PeerCertificates) == 0 {
 				return fmt.Errorf("the server presented no certificate")
 			}
-			sum := sha256.Sum256(raw[0])
+			sum := sha256.Sum256(state.PeerCertificates[0].Raw)
 			if hex.EncodeToString(sum[:]) != pin {
 				return fmt.Errorf("the certificate fingerprint does not match the pinned one")
 			}
@@ -266,6 +268,7 @@ func (c *s3Client) do(ctx context.Context, method, key string, q url.Values, bod
 		if body != nil {
 			rdr = bytes.NewReader(body)
 		}
+		// #nosec G704 -- the endpoint is entered by an administrator and checked by guardEgressURL (metadata, link-local, egress policy)
 		req, err := http.NewRequestWithContext(ctx, method, u.String(), rdr)
 		if err != nil {
 			return nil, err
@@ -279,6 +282,7 @@ func (c *s3Client) do(ctx context.Context, method, key string, q url.Values, bod
 			}
 		}
 		c.sign(req, body, "")
+		// #nosec G704 -- same endpoint, already validated when the storage was saved
 		resp, err := c.http.Do(req)
 		if err != nil {
 			lastErr = fmt.Errorf("cannot reach the storage: %w", err)
@@ -356,7 +360,7 @@ type listBucketResult struct {
 
 // list returns one page of a prefix listing; relPrefix is relative to the storage prefix.
 func (c *s3Client) list(ctx context.Context, relPrefix, cursor string, max int) (s3List, error) {
-	q := url.Values{"list-type": {"2"}, "delimiter": {"/"}}
+	q := url.Values{"list-type": []string{"2"}, "delimiter": []string{"/"}}
 	if p := c.fullKey(relPrefix); p != "" {
 		q.Set("prefix", p)
 	}
