@@ -408,6 +408,9 @@ func newRouter() http.Handler {
 	mux.HandleFunc("/api/credentials/", apiCredentialsHandler)
 	mux.HandleFunc("/api/proxies", apiProxiesHandler)
 	mux.HandleFunc("/api/proxies/", apiProxiesHandler)
+	// storages: S3-compatible object storage, a section of its own (docs/rfcs/0008)
+	mux.HandleFunc("/api/storages", apiStoragesHandler)
+	mux.HandleFunc("/api/storages/", apiStoragesHandler)
 	mux.HandleFunc("/api/snippets", apiSnippetsHandler)
 	mux.HandleFunc("/api/me/ui/", apiUserUIHandler)
 	mux.HandleFunc("/api/me/events", apiUserEventsHandler)
@@ -1122,6 +1125,12 @@ func initDB() {
 		"dst_conn_id", "dst_host", "dst_path", "size_bytes", "sha256", "status", "error")
 
 	// v10.3: saved commands (snippets), optionally run when a terminal connects
+	ensureTable("storages", storageSchema,
+		"id", "user_id", "name", "kind", "endpoint", "region", "bucket", "prefix", "path_style",
+		"access_key", "secret", "ca_fingerprint", "sse", "allow_write", "allow_delete", "allow_upload",
+		"max_object_mb", "created_at", "updated_at")
+	ensureTable("storage_shares", storageShareSchema,
+		"id", "storage_id", "token_hash", "prefix", "can_write", "can_delete", "expires_at", "created_by", "created_at")
 	ensureTable("snippets", `CREATE TABLE IF NOT EXISTS snippets (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER NOT NULL,
