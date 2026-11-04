@@ -122,6 +122,12 @@ POST   /api/storages/{id}/dir?prefix=           create an empty "folder"
 POST   /api/storages/{id}/move                  {from, to, overwrite}
 DELETE /api/storages/{id}/object?key=           needs allow_delete + X-WRM-Confirm
 GET    /api/storages/{id}/preview?key=          text / image / PDF, as the file manager
+POST   /api/storages/{id}/shares                create a read-only link to a prefix
+GET    /api/storages/{id}/shares                list the links (without the token)
+DELETE /api/storages/{id}/shares/{shareId}      revoke one link
+
+GET    /s3/{token}                              public page of a share (server-rendered, no script)
+GET    /s3/{token}/object?key=                  download (Range supported)
 ```
 
 `GET /object` streams with `Range` support and `Accept-Ranges: bytes`, which is what the
@@ -199,8 +205,9 @@ New outbound network egress and new long-lived secrets. Controls:
    formatting run in the browser, the server only checks size and etag.
 9. **No indirect fetch.** No "import from URL", no presigned URLs in v1: the browser always
    goes through WRM, so the object ACL never has to be public.
-10. **Shares.** Tokens are hashed at rest, prefix-scoped, read-only by default, with an
-    expiry; a share never reveals the storage credentials.
+10. **Shares.** Tokens are hashed at rest, prefix-scoped, read-only, with an expiry and a revoke;
+    v1 exposes read-only links only (the table already carries `can_write`/`can_delete` for a
+    later write share), and the public page is server-rendered HTML without a single script.
 11. **AI/MCP.** Separate scopes (`storage_read`, `storage_write`, `storage_delete`) so an AI
     connection approved for servers does not silently gain buckets; writes ask for approval,
     deletes are refused unless the scope is granted.
@@ -219,10 +226,16 @@ New outbound network egress and new long-lived secrets. Controls:
 - Upload is a small "add a file" action (default off), not a transfer manager: a progress
   bar for a 3 MB JSON is enough; there is no queue, no resume and no multipart.
 - Actions the storage does not allow are absent, not merely disabled.
+- Each storage shows a status dot from the background `HeadBucket` check; a down storage also
+  raises a `storage.down` notification for its owner.
+- A **Share** action opens a dialog with the current prefix, a validity in hours and the list of
+  existing links (revoke), and shows the new link once.
 
 ### Compatibility
 
-Additive only: two new tables, new routes, a new setting `storages_enabled` (default off)
+Additive only: two new tables, new routes, a new setting `storages_enabled` (default on, as a
+kill switch: the section is empty until someone adds an endpoint, and an administrator can turn
+it off)
 and new audit actions. No existing table, route or export format changes. An installation
 that never enables the feature behaves exactly as before.
 
